@@ -69,8 +69,9 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="mt-16 pt-8 border-t border-emerald-900 text-center text-xs text-emerald-400/50">
+        <div className="mt-16 pt-8 border-t border-emerald-900 text-center text-xs text-emerald-400/50 flex flex-col md:flex-row justify-between items-center gap-4">
           <p>© {new Date().getFullYear()} ঢাকায়স্থ বিষ্ণুপুর ইউনিয়ন সোসাইটি। সর্বস্বত্ব সংরক্ষিত।</p>
+          <Link to="/admin-login" className="hover:text-amber-400 transition-colors opacity-50 hover:opacity-100">এডমিন লগইন</Link>
         </div>
       </div>
     </footer>

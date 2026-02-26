@@ -7,6 +7,7 @@ import MemberArea from "./pages/MemberArea";
 import Donation from "./pages/Donation";
 import Contact from "./pages/Contact";
 import Admin from "./pages/Admin";
+import AdminLogin from "./pages/AdminLogin";
 
 export default function App() {
   return (
@@ -20,6 +21,7 @@ export default function App() {
           <Route path="donation" element={<Donation />} />
           <Route path="contact" element={<Contact />} />
           <Route path="admin" element={<Admin />} />
+          <Route path="admin-login" element={<AdminLogin />} />
         </Route>
       </Routes>
     </BrowserRouter>

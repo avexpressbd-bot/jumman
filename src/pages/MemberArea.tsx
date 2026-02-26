@@ -34,9 +34,26 @@ export default function MemberArea() {
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [userData, setUserData] = useState<any>(null);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [dbStatus, setDbStatus] = useState<"checking" | "connected" | "error">("checking");
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Check Firebase Connection
+    const checkConnection = async () => {
+      try {
+        await getDoc(doc(db, "system", "health"));
+        setDbStatus("connected");
+      } catch (err: any) {
+        console.error("Firebase connection check failed:", err);
+        if (err.code === "permission-denied") {
+          setDbStatus("connected"); // It's connected but permission denied, which is expected if no rules
+        } else {
+          setDbStatus("error");
+        }
+      }
+    };
+    checkConnection();
+
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
@@ -106,10 +123,18 @@ export default function MemberArea() {
     } catch (err: any) {
       console.error("Registration error:", err);
       let errorMsg = "নিবন্ধন ব্যর্থ হয়েছে";
-      if (err.code === "auth/email-already-in-use") errorMsg = "এই ইমেইলটি ইতিমধ্যে ব্যবহৃত হচ্ছে";
-      else if (err.code === "auth/weak-password") errorMsg = "পাসওয়ার্ড কমপক্ষে ৬ অক্ষর হতে হবে";
-      else if (err.code === "auth/invalid-email") errorMsg = "অকার্যকর ইমেইল";
-      else if (err.message) errorMsg = err.message;
+      
+      if (err.code === "auth/email-already-in-use") {
+        errorMsg = "এই ইমেইলটি ইতিমধ্যে ব্যবহৃত হচ্ছে। অনুগ্রহ করে লগইন করুন।";
+      } else if (err.code === "auth/weak-password") {
+        errorMsg = "পাসওয়ার্ড কমপক্ষে ৬ অক্ষর হতে হবে।";
+      } else if (err.code === "auth/invalid-email") {
+        errorMsg = "অকার্যকর ইমেইল ঠিকানা।";
+      } else if (err.code === "permission-denied" || err.message?.includes("permission-denied")) {
+        errorMsg = "ফায়ারস্টোর ডাটাবেজ পারমিশন নেই। অনুগ্রহ করে Firebase Console-এ গিয়ে Firestore Rules চেক করুন এবং 'allow read, write: if true;' অথবা সঠিক পারমিশন সেট করুন।";
+      } else if (err.message) {
+        errorMsg = `ত্রুটি: ${err.message}`;
+      }
       
       setMessage({ type: "error", text: errorMsg });
     } finally {
@@ -243,6 +268,11 @@ export default function MemberArea() {
             <p className="text-emerald-100/70 text-sm relative z-10">
               {isLogin ? "আপনার একাউন্টে লগইন করুন" : "নতুন সদস্য হিসেবে যুক্ত হোন"}
             </p>
+            <div className="mt-2 flex justify-center">
+              {dbStatus === "checking" && <span className="text-[10px] text-emerald-400 animate-pulse">ডাটাবেজ চেক করা হচ্ছে...</span>}
+              {dbStatus === "error" && <span className="text-[10px] text-red-400 flex items-center"><AlertCircle className="w-3 h-3 mr-1" /> কানেকশন এরর! কনফিগ চেক করুন।</span>}
+              {dbStatus === "connected" && <span className="text-[10px] text-emerald-500 flex items-center"><CheckCircle2 className="w-3 h-3 mr-1" /> ডাটাবেজ সংযুক্ত</span>}
+            </div>
           </div>
 
           <div className="p-10">

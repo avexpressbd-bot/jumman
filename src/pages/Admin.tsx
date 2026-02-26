@@ -51,25 +51,43 @@ export default function Admin() {
   const [isAdding, setIsAdding] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      if (currentUser) {
-        setUser(currentUser);
-        const docRef = doc(db, "members", currentUser.uid);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists() && docSnap.data().role === "admin") {
-          setIsAdmin(true);
-          fetchData();
+    const checkAuth = async () => {
+      // Check for dedicated admin login first
+      const isDedicatedAdmin = localStorage.getItem("isAdminAuthenticated") === "true";
+      
+      if (isDedicatedAdmin) {
+        setIsAdmin(true);
+        fetchData();
+        setLoading(false);
+        return;
+      }
+
+      // Fallback to Firebase Auth check
+      const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+        if (currentUser) {
+          setUser(currentUser);
+          const docRef = doc(db, "members", currentUser.uid);
+          const docSnap = await getDoc(docRef);
+          if (docSnap.exists() && docSnap.data().role === "admin") {
+            setIsAdmin(true);
+            fetchData();
+          } else {
+            setIsAdmin(false);
+            navigate("/admin-login");
+          }
         } else {
           setIsAdmin(false);
-          navigate("/member-area");
+          navigate("/admin-login");
         }
-      } else {
-        setIsAdmin(false);
-        navigate("/member-area");
-      }
-      setLoading(false);
-    });
-    return () => unsubscribe();
+        setLoading(false);
+      });
+      return unsubscribe;
+    };
+
+    const unsubscribePromise = checkAuth();
+    return () => {
+      unsubscribePromise.then(unsub => unsub && typeof unsub === 'function' && unsub());
+    };
   }, [navigate]);
 
   const fetchData = async () => {
@@ -186,6 +204,11 @@ export default function Admin() {
     }
   };
 
+  const handleAdminLogout = () => {
+    localStorage.removeItem("isAdminAuthenticated");
+    navigate("/admin-login");
+  };
+
   if (loading && isAdmin === null) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-stone-50">
@@ -241,9 +264,15 @@ export default function Admin() {
             </div>
             <div className="overflow-hidden">
               <p className="text-sm font-bold truncate">{user?.displayName || "এডমিন"}</p>
-              <p className="text-[10px] text-emerald-400 truncate">{user?.email}</p>
+              <p className="text-[10px] text-emerald-400 truncate">{user?.email || "Dedicated Session"}</p>
             </div>
           </div>
+          <button 
+            onClick={handleAdminLogout}
+            className="w-full mt-4 py-2 bg-red-500/20 text-red-200 text-xs font-bold rounded-xl hover:bg-red-500 hover:text-white transition-all"
+          >
+            লগআউট
+          </button>
         </div>
       </aside>
 
