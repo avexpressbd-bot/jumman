@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { auth, db } from "@/src/lib/firebase";
+import { auth, db, storage } from "@/src/lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { 
   doc, 
   getDoc, 
@@ -49,6 +50,23 @@ export default function Admin() {
   // Form states
   const [editingItem, setEditingItem] = useState<any>(null);
   const [isAdding, setIsAdding] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [uploading, setUploading] = useState(false);
+
+  const handleFileUpload = async (file: File, path: string) => {
+    setUploading(true);
+    try {
+      const storageRef = ref(storage, `${path}/${Date.now()}_${file.name}`);
+      const snapshot = await uploadBytes(storageRef, file);
+      const downloadURL = await getDownloadURL(snapshot.ref);
+      return downloadURL;
+    } catch (error) {
+      console.error("Upload error:", error);
+      throw error;
+    } finally {
+      setUploading(false);
+    }
+  };
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -141,19 +159,29 @@ export default function Admin() {
   const handleAddNews = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const formData = new FormData(e.target as HTMLFormElement);
-    const data = {
-      title: formData.get("title"),
-      content: formData.get("content"),
-      imageUrl: formData.get("imageUrl"),
-      date: new Date().toISOString()
-    };
+    const form = e.target as HTMLFormElement;
+    const formData = new FormData(form);
+    const imageFile = (form.elements.namedItem("imageFile") as HTMLInputElement).files?.[0];
+    
     try {
+      let imageUrl = formData.get("imageUrl") as string;
+      if (imageFile) {
+        imageUrl = await handleFileUpload(imageFile, "news");
+      }
+
+      const data = {
+        title: formData.get("title"),
+        content: formData.get("content"),
+        imageUrl,
+        date: new Date().toISOString()
+      };
+
       await addDoc(collection(db, "news"), data);
       setMessage({ type: "success", text: "নিউজ সফলভাবে যুক্ত করা হয়েছে!" });
       setIsAdding(false);
       fetchData();
     } catch (err) {
+      console.error("Error adding news:", err);
       setMessage({ type: "error", text: "যোগ করতে সমস্যা হয়েছে" });
     } finally {
       setLoading(false);
@@ -174,19 +202,29 @@ export default function Admin() {
   const handleAddCommittee = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const formData = new FormData(e.target as HTMLFormElement);
-    const data = {
-      name: formData.get("name"),
-      designation: formData.get("designation"),
-      imageUrl: formData.get("imageUrl"),
-      orderIndex: parseInt(formData.get("orderIndex") as string) || 0
-    };
+    const form = e.target as HTMLFormElement;
+    const formData = new FormData(form);
+    const imageFile = (form.elements.namedItem("imageFile") as HTMLInputElement).files?.[0];
+
     try {
+      let imageUrl = formData.get("imageUrl") as string;
+      if (imageFile) {
+        imageUrl = await handleFileUpload(imageFile, "committee");
+      }
+
+      const data = {
+        name: formData.get("name"),
+        designation: formData.get("designation"),
+        imageUrl,
+        orderIndex: parseInt(formData.get("orderIndex") as string) || 0
+      };
+
       await addDoc(collection(db, "committee"), data);
       setMessage({ type: "success", text: "সদস্য সফলভাবে যুক্ত করা হয়েছে!" });
       setIsAdding(false);
       fetchData();
     } catch (err) {
+      console.error("Error adding committee member:", err);
       setMessage({ type: "error", text: "যোগ করতে সমস্যা হয়েছে" });
     } finally {
       setLoading(false);
@@ -204,6 +242,75 @@ export default function Admin() {
     }
   };
 
+  const handleUpdateNews = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    const form = e.target as HTMLFormElement;
+    const formData = new FormData(form);
+    const imageFile = (form.elements.namedItem("imageFile") as HTMLInputElement).files?.[0];
+    
+    try {
+      let imageUrl = editingItem.imageUrl;
+      if (imageFile) {
+        imageUrl = await handleFileUpload(imageFile, "news");
+      } else if (formData.get("imageUrl")) {
+        imageUrl = formData.get("imageUrl") as string;
+      }
+
+      const data = {
+        title: formData.get("title"),
+        content: formData.get("content"),
+        imageUrl,
+        date: editingItem.date || new Date().toISOString()
+      };
+
+      await updateDoc(doc(db, "news", editingItem.id), data);
+      setMessage({ type: "success", text: "নিউজ সফলভাবে আপডেট করা হয়েছে!" });
+      setEditingItem(null);
+      setIsEditing(false);
+      fetchData();
+    } catch (err) {
+      console.error("Error updating news:", err);
+      setMessage({ type: "error", text: "আপডেট করতে সমস্যা হয়েছে" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdateCommittee = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    const form = e.target as HTMLFormElement;
+    const formData = new FormData(form);
+    const imageFile = (form.elements.namedItem("imageFile") as HTMLInputElement).files?.[0];
+
+    try {
+      let imageUrl = editingItem.imageUrl;
+      if (imageFile) {
+        imageUrl = await handleFileUpload(imageFile, "committee");
+      } else if (formData.get("imageUrl")) {
+        imageUrl = formData.get("imageUrl") as string;
+      }
+
+      const data = {
+        name: formData.get("name"),
+        designation: formData.get("designation"),
+        imageUrl,
+        orderIndex: parseInt(formData.get("orderIndex") as string) || 0
+      };
+
+      await updateDoc(doc(db, "committee", editingItem.id), data);
+      setMessage({ type: "success", text: "সদস্য সফলভাবে আপডেট করা হয়েছে!" });
+      setEditingItem(null);
+      setIsEditing(false);
+      fetchData();
+    } catch (err) {
+      console.error("Error updating committee member:", err);
+      setMessage({ type: "error", text: "আপডেট করতে সমস্যা হয়েছে" });
+    } finally {
+      setLoading(false);
+    }
+  };
   const handleAdminLogout = () => {
     localStorage.removeItem("isAdminAuthenticated");
     navigate("/admin-login");
@@ -331,31 +438,60 @@ export default function Admin() {
               </button>
             </div>
 
-            {isAdding && (
+            {(isAdding || isEditing) && (
               <motion.div 
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 className="bg-white p-8 rounded-[2.5rem] shadow-lg border border-emerald-100"
               >
                 <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-xl font-bold text-emerald-900">নতুন নিউজ যোগ করুন</h3>
-                  <button onClick={() => setIsAdding(false)}><X className="w-6 h-6 text-emerald-400" /></button>
+                  <h3 className="text-xl font-bold text-emerald-900">
+                    {isEditing ? "নিউজ এডিট করুন" : "নতুন নিউজ যোগ করুন"}
+                  </h3>
+                  <button onClick={() => { setIsAdding(false); setIsEditing(false); setEditingItem(null); }}>
+                    <X className="w-6 h-6 text-emerald-400" />
+                  </button>
                 </div>
-                <form onSubmit={handleAddNews} className="space-y-6">
+                <form onSubmit={isEditing ? handleUpdateNews : handleAddNews} className="space-y-6">
                   <div>
                     <label className="block text-xs font-bold text-emerald-900 uppercase tracking-widest mb-2">শিরোনাম</label>
-                    <input name="title" required className="w-full px-6 py-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500" />
+                    <input 
+                      name="title" 
+                      required 
+                      defaultValue={editingItem?.title || ""}
+                      className="w-full px-6 py-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500" 
+                    />
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-emerald-900 uppercase tracking-widest mb-2">বিস্তারিত বর্ণনা</label>
-                    <textarea name="content" required rows={4} className="w-full px-6 py-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500" />
+                    <textarea 
+                      name="content" 
+                      required 
+                      rows={4} 
+                      defaultValue={editingItem?.content || ""}
+                      className="w-full px-6 py-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500" 
+                    />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-emerald-900 uppercase tracking-widest mb-2">ছবির লিঙ্ক (URL)</label>
-                    <input name="imageUrl" required className="w-full px-6 py-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500" placeholder="https://..." />
+                    <label className="block text-xs font-bold text-emerald-900 uppercase tracking-widest mb-2">ছবি আপলোড করুন</label>
+                    <div className="flex items-center gap-4">
+                      <input 
+                        type="file" 
+                        name="imageFile" 
+                        accept="image/*"
+                        className="flex-grow px-6 py-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-emerald-900 file:text-white hover:file:bg-emerald-800" 
+                      />
+                      <span className="text-xs text-emerald-400">অথবা</span>
+                      <input 
+                        name="imageUrl" 
+                        defaultValue={editingItem?.imageUrl || ""}
+                        className="flex-grow px-6 py-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500" 
+                        placeholder="ছবির লিঙ্ক (URL)" 
+                      />
+                    </div>
                   </div>
                   <button type="submit" disabled={loading} className="w-full py-4 bg-emerald-900 text-white font-bold rounded-2xl hover:bg-emerald-800 transition-all">
-                    {loading ? "অপেক্ষা করুন..." : "নিউজ পাবলিশ করুন"}
+                    {loading ? "অপেক্ষা করুন..." : (isEditing ? "আপডেট করুন" : "নিউজ পাবলিশ করুন")}
                   </button>
                 </form>
               </motion.div>
@@ -371,7 +507,16 @@ export default function Admin() {
                     <p className="text-[10px] text-emerald-400 mt-2 uppercase font-bold">{new Date(item.date).toLocaleDateString("bn-BD")}</p>
                   </div>
                   <div className="flex gap-2">
-                    <button className="p-3 bg-emerald-50 text-emerald-700 rounded-xl hover:bg-emerald-900 hover:text-white transition-all"><Edit2 className="w-4 h-4" /></button>
+                    <button 
+                      onClick={() => {
+                        setEditingItem(item);
+                        setIsEditing(true);
+                        setIsAdding(false);
+                      }}
+                      className="p-3 bg-emerald-50 text-emerald-700 rounded-xl hover:bg-emerald-900 hover:text-white transition-all"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </button>
                     <button onClick={() => handleDeleteNews(item.id)} className="p-3 bg-red-50 text-red-600 rounded-xl hover:bg-red-600 hover:text-white transition-all"><Trash2 className="w-4 h-4" /></button>
                   </div>
                 </div>
@@ -393,39 +538,74 @@ export default function Admin() {
               </button>
             </div>
 
-            {isAdding && (
+            {(isAdding || isEditing) && (
               <motion.div 
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 className="bg-white p-8 rounded-[2.5rem] shadow-lg border border-emerald-100"
               >
                 <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-xl font-bold text-emerald-900">নতুন সদস্য যোগ করুন</h3>
-                  <button onClick={() => setIsAdding(false)}><X className="w-6 h-6 text-emerald-400" /></button>
+                  <h3 className="text-xl font-bold text-emerald-900">
+                    {isEditing ? "সদস্য তথ্য এডিট করুন" : "নতুন সদস্য যোগ করুন"}
+                  </h3>
+                  <button onClick={() => { setIsAdding(false); setIsEditing(false); setEditingItem(null); }}>
+                    <X className="w-6 h-6 text-emerald-400" />
+                  </button>
                 </div>
-                <form onSubmit={handleAddCommittee} className="space-y-6">
+                <form onSubmit={isEditing ? handleUpdateCommittee : handleAddCommittee} className="space-y-6">
                   <div className="grid grid-cols-2 gap-6">
                     <div>
                       <label className="block text-xs font-bold text-emerald-900 uppercase tracking-widest mb-2">নাম</label>
-                      <input name="name" required className="w-full px-6 py-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500" />
+                      <input 
+                        name="name" 
+                        required 
+                        defaultValue={editingItem?.name || ""}
+                        className="w-full px-6 py-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500" 
+                      />
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-emerald-900 uppercase tracking-widest mb-2">পদবী</label>
-                      <input name="designation" required className="w-full px-6 py-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500" />
+                      <input 
+                        name="designation" 
+                        required 
+                        defaultValue={editingItem?.designation || ""}
+                        className="w-full px-6 py-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500" 
+                      />
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-6">
                     <div>
-                      <label className="block text-xs font-bold text-emerald-900 uppercase tracking-widest mb-2">ছবির লিঙ্ক (URL)</label>
-                      <input name="imageUrl" required className="w-full px-6 py-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500" placeholder="https://..." />
+                      <label className="block text-xs font-bold text-emerald-900 uppercase tracking-widest mb-2">ছবি আপলোড করুন</label>
+                      <div className="flex items-center gap-4">
+                        <input 
+                          type="file" 
+                          name="imageFile" 
+                          accept="image/*"
+                          className="flex-grow px-6 py-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-emerald-900 file:text-white hover:file:bg-emerald-800" 
+                        />
+                        <span className="text-xs text-emerald-400">অথবা</span>
+                        <input 
+                          name="imageUrl" 
+                          defaultValue={editingItem?.imageUrl || ""}
+                          className="flex-grow px-6 py-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500" 
+                          placeholder="ছবির লিঙ্ক (URL)" 
+                        />
+                      </div>
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-emerald-900 uppercase tracking-widest mb-2">ক্রমিক নম্বর (Sorting)</label>
-                      <input name="orderIndex" type="number" required className="w-full px-6 py-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500" placeholder="1, 2, 3..." />
+                      <input 
+                        name="orderIndex" 
+                        type="number" 
+                        required 
+                        defaultValue={editingItem?.orderIndex || ""}
+                        className="w-full px-6 py-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500" 
+                        placeholder="1, 2, 3..." 
+                      />
                     </div>
                   </div>
                   <button type="submit" disabled={loading} className="w-full py-4 bg-emerald-900 text-white font-bold rounded-2xl hover:bg-emerald-800 transition-all">
-                    {loading ? "অপেক্ষা করুন..." : "সদস্য যোগ করুন"}
+                    {loading ? "অপেক্ষা করুন..." : (isEditing ? "আপডেট করুন" : "সদস্য যোগ করুন")}
                   </button>
                 </form>
               </motion.div>
@@ -438,7 +618,16 @@ export default function Admin() {
                   <h4 className="font-bold text-emerald-900 text-lg">{member.name}</h4>
                   <p className="text-sm text-amber-600 font-bold uppercase tracking-widest">{member.designation}</p>
                   <div className="flex gap-2 mt-6 w-full">
-                    <button className="flex-grow py-3 bg-emerald-50 text-emerald-700 rounded-xl hover:bg-emerald-900 hover:text-white transition-all flex items-center justify-center"><Edit2 className="w-4 h-4 mr-2" /> এডিট</button>
+                    <button 
+                      onClick={() => {
+                        setEditingItem(member);
+                        setIsEditing(true);
+                        setIsAdding(false);
+                      }}
+                      className="flex-grow py-3 bg-emerald-50 text-emerald-700 rounded-xl hover:bg-emerald-900 hover:text-white transition-all flex items-center justify-center"
+                    >
+                      <Edit2 className="w-4 h-4 mr-2" /> এডিট
+                    </button>
                     <button onClick={() => handleDeleteCommittee(member.id)} className="p-3 bg-red-50 text-red-600 rounded-xl hover:bg-red-600 hover:text-white transition-all"><Trash2 className="w-4 h-4" /></button>
                   </div>
                 </div>
@@ -453,6 +642,25 @@ export default function Admin() {
             <form onSubmit={handleSaveSettings} className="bg-white p-10 rounded-[2.5rem] shadow-sm border border-emerald-100 space-y-8">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-6">
+                  <h3 className="text-lg font-bold text-emerald-900 border-b pb-2">সাধারণ সেটিংস</h3>
+                  <div>
+                    <label className="block text-xs font-bold text-emerald-900 uppercase tracking-widest mb-2">লোগো আপলোড</label>
+                    <div className="flex items-center gap-4">
+                      <input 
+                        type="file" 
+                        accept="image/*"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const url = await handleFileUpload(file, "settings");
+                            setSiteSettings({...siteSettings, logoUrl: url});
+                          }
+                        }}
+                        className="flex-grow px-6 py-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-emerald-900 file:text-white hover:file:bg-emerald-800" 
+                      />
+                      {siteSettings.logoUrl && <img src={siteSettings.logoUrl} className="w-12 h-12 object-contain" />}
+                    </div>
+                  </div>
                   <h3 className="text-lg font-bold text-emerald-900 border-b pb-2">হিরো সেকশন</h3>
                   <div>
                     <label className="block text-xs font-bold text-emerald-900 uppercase tracking-widest mb-2">হিরো টাইটেল</label>
@@ -472,12 +680,27 @@ export default function Admin() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-emerald-900 uppercase tracking-widest mb-2">হিরো ইমেজ URL</label>
-                    <input 
-                      value={siteSettings.heroImage} 
-                      onChange={e => setSiteSettings({...siteSettings, heroImage: e.target.value})}
-                      className="w-full px-6 py-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500" 
-                    />
+                    <label className="block text-xs font-bold text-emerald-900 uppercase tracking-widest mb-2">হিরো ইমেজ আপলোড</label>
+                    <div className="flex items-center gap-4">
+                      <input 
+                        type="file" 
+                        accept="image/*"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const url = await handleFileUpload(file, "settings");
+                            setSiteSettings({...siteSettings, heroImage: url});
+                          }
+                        }}
+                        className="flex-grow px-6 py-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-emerald-900 file:text-white hover:file:bg-emerald-800" 
+                      />
+                      <input 
+                        value={siteSettings.heroImage} 
+                        onChange={e => setSiteSettings({...siteSettings, heroImage: e.target.value})}
+                        className="flex-grow px-6 py-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500" 
+                        placeholder="অথবা ইমেজ URL"
+                      />
+                    </div>
                   </div>
                 </div>
 

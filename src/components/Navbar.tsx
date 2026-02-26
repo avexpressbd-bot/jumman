@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Menu, X, User } from "lucide-react";
 import { cn } from "@/src/lib/utils";
+import { db } from "@/src/lib/firebase";
+import { doc, getDoc } from "firebase/firestore";
 
 const navLinks = [
   { name: "হোম", path: "/" },
@@ -13,20 +15,44 @@ const navLinks = [
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const location = useLocation();
+
+  useEffect(() => {
+    const fetchLogo = async () => {
+      try {
+        const settingsSnap = await getDoc(doc(db, "settings", "site"));
+        if (settingsSnap.exists()) {
+          setLogoUrl(settingsSnap.data().logoUrl);
+        }
+      } catch (err) {
+        console.error("Error fetching logo:", err);
+      }
+    };
+    fetchLogo();
+  }, []);
 
   return (
     <nav className="bg-emerald-900 text-white sticky top-0 z-50 shadow-lg border-b border-emerald-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
           <div className="flex items-center">
-            <Link to="/" className="flex flex-col">
-              <span className="text-xl font-bold tracking-tight text-amber-400 leading-tight">
-                বিষ্ণুপুর ইউনিয়ন সোসাইটি
-              </span>
-              <span className="text-xs font-medium text-emerald-100/80">
-                ঢাকায়স্থ সামাজিক সংগঠন
-              </span>
+            <Link to="/" className="flex items-center gap-3">
+              {logoUrl ? (
+                <img src={logoUrl} alt="Logo" className="w-12 h-12 object-contain" />
+              ) : (
+                <div className="w-10 h-10 bg-amber-400 rounded-lg flex items-center justify-center font-bold text-emerald-900">
+                  B
+                </div>
+              )}
+              <div className="flex flex-col">
+                <span className="text-xl font-bold tracking-tight text-amber-400 leading-tight">
+                  বিষ্ণুপুর ইউনিয়ন সোসাইটি
+                </span>
+                <span className="text-xs font-medium text-emerald-100/80">
+                  ঢাকায়স্থ সামাজিক সংগঠন
+                </span>
+              </div>
             </Link>
           </div>
 
