@@ -92,7 +92,8 @@ async function startServer() {
   }
 
   app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+    console.log(`Server is listening on all interfaces at port ${PORT}`);
+    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
   });
 }
 
@@ -112,4 +113,7 @@ if (newsCount.count === 0) {
   stmt.run("শীতবস্ত্র বিতরণ কর্মসূচি", "বিষ্ণুপুর ইউনিয়নের দুস্থ পরিবারের মাঝে শীতবস্ত্র বিতরণ করা হয়েছে।", "https://picsum.photos/seed/news2/800/400");
 }
 
-startServer();
+console.log("Starting server initialization...");
+startServer().catch(err => {
+  console.error("Failed to start server:", err);
+});
