@@ -312,6 +312,10 @@ export default function Admin() {
 
   const handleUpdateNews = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!editingItem?.id) {
+      setMessage({ type: "error", text: "এডিট করার জন্য কোনো আইটেম পাওয়া যায়নি।" });
+      return;
+    }
     setLoading(true);
     const form = e.target as HTMLFormElement;
     const formData = new FormData(form);
@@ -319,16 +323,18 @@ export default function Admin() {
     
     try {
       let imageUrl = editingItem.imageUrl;
+      const urlInput = formData.get("imageUrl") as string;
+      
       if (imageFile) {
         imageUrl = await handleFileUpload(imageFile, "news");
-      } else if (formData.get("imageUrl")) {
-        imageUrl = formData.get("imageUrl") as string;
+      } else if (urlInput && urlInput.trim() !== "") {
+        imageUrl = urlInput;
       }
 
       const data = {
         title: formData.get("title"),
         content: formData.get("content"),
-        imageUrl,
+        imageUrl: imageUrl || "https://picsum.photos/seed/news/800/400",
         date: editingItem.date || new Date().toISOString()
       };
 
@@ -337,9 +343,9 @@ export default function Admin() {
       setEditingItem(null);
       setIsEditing(false);
       fetchData();
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error updating news:", err);
-      setMessage({ type: "error", text: "আপডেট করতে সমস্যা হয়েছে" });
+      setMessage({ type: "error", text: `আপডেট করতে সমস্যা হয়েছে: ${err.message || "Unknown error"}` });
     } finally {
       setLoading(false);
     }

@@ -37,6 +37,7 @@ export default function Home() {
 
   const mainNews = recentNews[0];
   const otherNews = recentNews.slice(1);
+  const iftarNews = recentNews.find(n => n.title.includes("ইফতার"));
 
   return (
     <div className="space-y-20 pb-20">
@@ -84,6 +85,51 @@ export default function Home() {
           </motion.div>
         </div>
       </section>
+
+      {/* Iftar Highlight Section */}
+      {iftarNews && (
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-10 relative z-20">
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-gradient-to-r from-amber-500 to-amber-600 rounded-[2.5rem] p-1 shadow-2xl shadow-amber-500/20"
+          >
+            <div className="bg-white rounded-[2.3rem] p-8 md:p-10 flex flex-col md:flex-row items-center gap-8">
+              <div className="w-full md:w-1/3 aspect-video md:aspect-square rounded-3xl overflow-hidden shadow-lg">
+                <img 
+                  src={iftarNews.imageUrl} 
+                  alt={iftarNews.title} 
+                  className="w-full h-full object-cover"
+                  referrerPolicy="no-referrer"
+                />
+              </div>
+              <div className="flex-grow text-center md:text-left">
+                <div className="inline-flex items-center px-4 py-1.5 bg-amber-100 text-amber-700 rounded-full text-xs font-bold uppercase tracking-widest mb-4">
+                  বিশেষ ঘোষণা
+                </div>
+                <h2 className="text-3xl font-bold text-emerald-900 mb-4">{iftarNews.title}</h2>
+                <p className="text-emerald-800/70 mb-8 line-clamp-3 md:line-clamp-none">
+                  {iftarNews.content}
+                </p>
+                <div className="flex flex-wrap gap-4 justify-center md:justify-start">
+                  <Link 
+                    to="/iftar-registration" 
+                    className="px-8 py-4 bg-emerald-900 text-white font-bold rounded-2xl hover:bg-emerald-800 transition-all shadow-lg shadow-emerald-900/20"
+                  >
+                    রেজিস্ট্রেশন করুন
+                  </Link>
+                  <Link 
+                    to="/news" 
+                    className="px-8 py-4 bg-emerald-50 text-emerald-900 font-bold rounded-2xl hover:bg-emerald-100 transition-all"
+                  >
+                    বিস্তারিত জানুন
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </section>
+      )}
 
       {/* Mission & Vision */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
