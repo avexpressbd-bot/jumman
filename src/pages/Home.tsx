@@ -5,11 +5,23 @@ import { useEffect, useState } from "react";
 import { db } from "@/src/lib/firebase";
 import { doc, getDoc, collection, getDocs, query, orderBy, limit } from "firebase/firestore";
 
+interface NavLink {
+  name: string;
+  path: string;
+}
+
+const navLinks: NavLink[] = [
+  { name: "হোম", path: "/" },
+  { name: "সদস্য এরিয়া", path: "/member-area" },
+  { name: "যোগাযোগ", path: "/contact" },
+];
+
 export default function Home() {
   const [settings, setSettings] = useState<any>(null);
   const [recentNews, setRecentNews] = useState<any[]>([]);
   const [iftarHighlight, setIftarHighlight] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -33,6 +45,9 @@ export default function Home() {
     fetchData();
   }, []);
 
+  const isActive = (path: string): boolean => location.pathname === path;
+  const toggleMenu = (): void => setIsOpen(!isOpen);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-stone-50">
@@ -46,8 +61,42 @@ export default function Home() {
 
   return (
     <div className="space-y-20 pb-20">
-      {/* Hero Section */}
-      <section className="relative h-[600px] flex items-center overflow-hidden">
+      {/* Custom CSS for animations */}
+      <style>{`
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        .animate-fade-in-up {
+          animation: fadeInUp 0.8s ease forwards;
+        }
+        
+        .animate-fade-in-up-delay-1 {
+          animation: fadeInUp 0.8s ease 0.2s forwards;
+          opacity: 0;
+        }
+        
+        .animate-fade-in-up-delay-2 {
+          animation: fadeInUp 0.8s ease 0.4s forwards;
+          opacity: 0;
+        }
+        
+        .animate-fade-in-up-delay-3 {
+          animation: fadeInUp 0.8s ease 0.6s forwards;
+          opacity: 0;
+        }
+      `}</style>
+
+      {/* Premium Hero Section */}
+      <section className="relative min-h-screen md:min-h-[700px] flex items-center justify-center overflow-hidden">
+        {/* Background with gradient overlay */}
         <div className="absolute inset-0 z-0">
           <img
             src={settings?.heroImage || "https://picsum.photos/seed/society-hero/1920/1080?blur=2"}
@@ -55,38 +104,75 @@ export default function Home() {
             className="w-full h-full object-cover"
             referrerPolicy="no-referrer"
           />
-          <div className="absolute inset-0 bg-emerald-950/70 mix-blend-multiply" />
-          <div className="absolute inset-0 bg-gradient-to-t from-emerald-950 via-transparent to-transparent" />
+          {/* Deep gradient overlay */}
+          <div className="absolute inset-0 bg-linear-to-r from-emerald-950/80 via-emerald-950/70 to-emerald-950/80" />
+          <div className="absolute inset-0 bg-linear-to-t from-emerald-950/90 via-transparent to-transparent" />
         </div>
 
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center sm:text-left">
+        {/* Content */}
+        <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 w-full text-center">
           <motion.div
-            initial={{ opacity: 0, x: -50 }}
-            animate={{ opacity: 1, x: 0 }}
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
-            className="max-w-2xl"
+            className="space-y-8"
           >
-            <h1 className="text-4xl md:text-6xl font-bold text-white leading-tight mb-6">
-              {settings?.heroTitle || "ঐক্যবদ্ধ বিষ্ণুপুর, সমৃদ্ধ ভবিষ্যৎ"}
+            {/* Main Headline */}
+            <h1 
+              className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight tracking-tight animate-fade-in-up"
+              style={{
+                fontFamily: "'Hind Siliguri', 'Kalpurush', 'SolaimanLipi', sans-serif",
+                textShadow: "0 4px 12px rgba(0, 0, 0, 0.5)"
+              }}
+            >
+              ঐক্যবদ্ধ বিষ্ণুপুর, সমৃদ্ধ ভবিষ্যৎ
             </h1>
-            <p className="text-lg md:text-xl text-emerald-100/90 mb-10 leading-relaxed">
-              {settings?.heroSubtitle || `ঢাকায়স্থ ${settings?.siteName || "বিষ্ণুপুর ইউনিয়ন সোসাইটি"} একটি অরাজনৈতিক ও সামাজিক সংগঠন।`}
+
+            {/* Sub-headline Description */}
+            <p 
+              className="text-base sm:text-lg md:text-xl text-white/90 leading-relaxed max-w-3xl mx-auto animate-fade-in-up-delay-1"
+              style={{
+                fontFamily: "'Hind Siliguri', 'Kalpurush', 'SolaimanLipi', sans-serif"
+              }}
+            >
+              ঢাকাস্থ বিষ্ণুপুর ইউনিয়ন সোসাইটি একটি অরাজনৈতিক ও সামাজিক সংগঠন। আমরা আমাদের ইউনিয়নের মানুষের কল্যাণে এবং ভ্রাতৃত্বের বন্ধন সুদৃঢ় করতে কাজ করে যাচ্ছি।
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center sm:justify-start">
+
+            {/* CTA Buttons */}
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4 animate-fade-in-up-delay-2">
+              {/* Primary Button */}
               <Link
                 to="/member-area"
-                className="inline-flex items-center justify-center px-8 py-4 bg-amber-400 text-emerald-950 font-bold rounded-full hover:bg-amber-300 transition-all shadow-lg shadow-amber-400/20"
+                className="inline-flex items-center justify-center gap-2 px-8 sm:px-10 py-4 bg-yellow-400 text-emerald-950 font-bold rounded-full hover:scale-105 transition-all duration-300 shadow-lg shadow-yellow-400/40 group"
               >
-                সদস্য হোন
-                <ArrowRight className="ml-2 w-5 h-5" />
+                <span>সদস্য হোন</span>
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Link>
+
+              {/* Secondary Ghost Button */}
               <Link
                 to="/contact"
-                className="inline-flex items-center justify-center px-8 py-4 bg-white/10 backdrop-blur-md text-white border border-white/20 font-bold rounded-full hover:bg-white/20 transition-all"
+                className="inline-flex items-center justify-center px-8 sm:px-10 py-4 bg-white/10 backdrop-blur-md text-white border-2 border-white/40 font-bold rounded-full hover:bg-white/20 hover:border-white/60 transition-all duration-300"
+                style={{
+                  fontFamily: "'Hind Siliguri', 'Kalpurush', 'SolaimanLipi', sans-serif"
+                }}
               >
                 যোগাযোগ করুন
               </Link>
             </div>
+          </motion.div>
+        </div>
+
+        {/* Scroll indicator */}
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10">
+          <motion.div
+            animate={{ y: [0, 10, 0] }}
+            transition={{ duration: 2, repeat: Infinity }}
+            className="text-white/50 text-center"
+          >
+            <svg className="w-6 h-6 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+            </svg>
           </motion.div>
         </div>
       </section>
