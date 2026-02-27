@@ -28,11 +28,12 @@ import {
   Image as ImageIcon,
   CheckCircle2,
   AlertCircle,
-  Loader2
+  Loader2,
+  CreditCard
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-type Tab = "dashboard" | "news" | "committee" | "members" | "settings";
+type Tab = "dashboard" | "news" | "committee" | "adhoc_committee" | "iftar" | "members" | "settings";
 
 export default function Admin() {
   const [user, setUser] = useState<any>(null);
@@ -45,6 +46,8 @@ export default function Admin() {
   // Data states
   const [news, setNews] = useState<any[]>([]);
   const [committee, setCommittee] = useState<any[]>([]);
+  const [adhocCommittee, setAdhocCommittee] = useState<any[]>([]);
+  const [iftarRegistrations, setIftarRegistrations] = useState<any[]>([]);
   const [members, setMembers] = useState<any[]>([]);
   const [siteSettings, setSiteSettings] = useState<any>(null);
 
@@ -123,6 +126,14 @@ export default function Admin() {
       // Fetch Committee
       const committeeSnap = await getDocs(query(collection(db, "committee"), orderBy("orderIndex", "asc")));
       setCommittee(committeeSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+
+      // Fetch Adhoc Committee
+      const adhocSnap = await getDocs(query(collection(db, "adhoc_committee"), orderBy("orderIndex", "asc")));
+      setAdhocCommittee(adhocSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+
+      // Fetch Iftar Registrations
+      const iftarSnap = await getDocs(query(collection(db, "iftar_registrations"), orderBy("createdAt", "desc")));
+      setIftarRegistrations(iftarSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
 
       // Fetch Members
       const membersSnap = await getDocs(collection(db, "members"));
@@ -368,6 +379,138 @@ export default function Admin() {
       setLoading(false);
     }
   };
+
+  const handleAddAdhocCommittee = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    const form = e.target as HTMLFormElement;
+    const formData = new FormData(form);
+    const imageFile = (form.elements.namedItem("imageFile") as HTMLInputElement).files?.[0];
+
+    try {
+      let imageUrl = formData.get("imageUrl") as string;
+      if (imageFile) {
+        imageUrl = await handleFileUpload(imageFile, "adhoc_committee");
+      }
+
+      const data = {
+        name: formData.get("name"),
+        designation: formData.get("designation"),
+        phone: formData.get("phone"),
+        imageUrl,
+        orderIndex: parseInt(formData.get("orderIndex") as string) || 0
+      };
+
+      await addDoc(collection(db, "adhoc_committee"), data);
+      setMessage({ type: "success", text: "আহ্বায়ক কমিটির সদস্য সফলভাবে যুক্ত করা হয়েছে!" });
+      setIsAdding(false);
+      fetchData();
+    } catch (err) {
+      console.error("Error adding adhoc committee member:", err);
+      setMessage({ type: "error", text: "যোগ করতে সমস্যা হয়েছে" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdateAdhocCommittee = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    const form = e.target as HTMLFormElement;
+    const formData = new FormData(form);
+    const imageFile = (form.elements.namedItem("imageFile") as HTMLInputElement).files?.[0];
+
+    try {
+      let imageUrl = editingItem.imageUrl;
+      if (imageFile) {
+        imageUrl = await handleFileUpload(imageFile, "adhoc_committee");
+      } else if (formData.get("imageUrl")) {
+        imageUrl = formData.get("imageUrl") as string;
+      }
+
+      const data = {
+        name: formData.get("name"),
+        designation: formData.get("designation"),
+        phone: formData.get("phone"),
+        imageUrl,
+        orderIndex: parseInt(formData.get("orderIndex") as string) || 0
+      };
+
+      await updateDoc(doc(db, "adhoc_committee", editingItem.id), data);
+      setMessage({ type: "success", text: "আহ্বায়ক কমিটির সদস্য সফলভাবে আপডেট করা হয়েছে!" });
+      setEditingItem(null);
+      setIsEditing(false);
+      fetchData();
+    } catch (err) {
+      console.error("Error updating adhoc committee member:", err);
+      setMessage({ type: "error", text: "আপডেট করতে সমস্যা হয়েছে" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteAdhocCommittee = async (id: string) => {
+    if (!confirm("আপনি কি নিশ্চিতভাবে এটি ডিলিট করতে চান?")) return;
+    try {
+      await deleteDoc(doc(db, "adhoc_committee", id));
+      setMessage({ type: "success", text: "সদস্য ডিলিট করা হয়েছে" });
+      fetchData();
+    } catch (err) {
+      setMessage({ type: "error", text: "ডিলিট করতে সমস্যা হয়েছে" });
+    }
+  };
+
+  const handleUpdateIftarStatus = async (id: string, status: "accepted" | "rejected") => {
+    try {
+      await updateDoc(doc(db, "iftar_registrations", id), { status });
+      setMessage({ type: "success", text: `রেজিস্ট্রেশন ${status === "accepted" ? "এক্সেপ্ট" : "রিজেক্ট"} করা হয়েছে` });
+      fetchData();
+    } catch (err) {
+      setMessage({ type: "error", text: "স্ট্যাটাস আপডেট করতে সমস্যা হয়েছে" });
+    }
+  };
+
+  const handleDeleteIftarRegistration = async (id: string) => {
+    if (!confirm("আপনি কি নিশ্চিতভাবে এটি ডিলিট করতে চান?")) return;
+    try {
+      await deleteDoc(doc(db, "iftar_registrations", id));
+      setMessage({ type: "success", text: "রেজিস্ট্রেশন ডিলিট করা হয়েছে" });
+      fetchData();
+    } catch (err) {
+      setMessage({ type: "error", text: "ডিলিট করতে সমস্যা হয়েছে" });
+    }
+  };
+
+  const handleUpdateIftarRegistration = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    const form = e.target as HTMLFormElement;
+    const formData = new FormData(form);
+
+    try {
+      const data = {
+        name: formData.get("name"),
+        phone: formData.get("phone"),
+        profession: formData.get("profession"),
+        age: formData.get("age"),
+        paymentMethod: formData.get("paymentMethod"),
+        amount: formData.get("amount"),
+        transactionId: formData.get("transactionId"),
+      };
+
+      await updateDoc(doc(db, "iftar_registrations", editingItem.id), data);
+      setMessage({ type: "success", text: "রেজিস্ট্রেশন তথ্য আপডেট করা হয়েছে!" });
+      setEditingItem(null);
+      setIsEditing(false);
+      fetchData();
+    } catch (err) {
+      console.error("Error updating iftar registration:", err);
+      setMessage({ type: "error", text: "আপডেট করতে সমস্যা হয়েছে" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleAdminLogout = () => {
     localStorage.removeItem("isAdminAuthenticated");
     navigate("/admin-login");
@@ -412,6 +555,20 @@ export default function Admin() {
           >
             <Users className="w-5 h-5 mr-3" />
             কমিটি ম্যানেজমেন্ট
+          </button>
+          <button 
+            onClick={() => setActiveTab("adhoc_committee")}
+            className={`w-full flex items-center px-4 py-3 rounded-xl transition-all ${activeTab === "adhoc_committee" ? "bg-emerald-800 text-amber-400" : "hover:bg-emerald-900/50 text-emerald-100"}`}
+          >
+            <Users className="w-5 h-5 mr-3" />
+            আহ্বায়ক কমিটি
+          </button>
+          <button 
+            onClick={() => setActiveTab("iftar")}
+            className={`w-full flex items-center px-4 py-3 rounded-xl transition-all ${activeTab === "iftar" ? "bg-emerald-800 text-amber-400" : "hover:bg-emerald-900/50 text-emerald-100"}`}
+          >
+            <CreditCard className="w-5 h-5 mr-3" />
+            ইফতার রেজিস্ট্রেশন
           </button>
           <button 
             onClick={() => setActiveTab("members")}
@@ -479,6 +636,16 @@ export default function Admin() {
                 <div className="text-emerald-400 mb-4"><Users className="w-10 h-10" /></div>
                 <div className="text-3xl font-bold text-emerald-900">{committee.length}</div>
                 <div className="text-sm text-emerald-600 uppercase tracking-widest font-bold mt-1">কমিটি সদস্য</div>
+              </div>
+              <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-emerald-100">
+                <div className="text-emerald-400 mb-4"><Users className="w-10 h-10" /></div>
+                <div className="text-3xl font-bold text-emerald-900">{adhocCommittee.length}</div>
+                <div className="text-sm text-emerald-600 uppercase tracking-widest font-bold mt-1">আহ্বায়ক সদস্য</div>
+              </div>
+              <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-emerald-100">
+                <div className="text-emerald-400 mb-4"><CreditCard className="w-10 h-10" /></div>
+                <div className="text-3xl font-bold text-emerald-900">{iftarRegistrations.length}</div>
+                <div className="text-sm text-emerald-600 uppercase tracking-widest font-bold mt-1">ইফতার রেজি:</div>
               </div>
               <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-emerald-100">
                 <div className="text-emerald-400 mb-4"><Users className="w-10 h-10" /></div>
@@ -705,6 +872,269 @@ export default function Admin() {
           </div>
         )}
 
+        {activeTab === "iftar" && (
+          <div className="space-y-8">
+            <div className="flex justify-between items-center">
+              <h2 className="text-3xl font-bold text-emerald-900">ইফতার রেজিস্ট্রেশন ম্যানেজমেন্ট</h2>
+            </div>
+
+            {isEditing && editingItem && (
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="bg-white p-8 rounded-[2.5rem] shadow-lg border border-emerald-100"
+              >
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-xl font-bold text-emerald-900">রেজিস্ট্রেশন তথ্য এডিট করুন</h3>
+                  <button onClick={() => { setIsEditing(false); setEditingItem(null); }}>
+                    <X className="w-6 h-6 text-emerald-400" />
+                  </button>
+                </div>
+                <form onSubmit={handleUpdateIftarRegistration} className="space-y-6">
+                  <div className="grid grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-xs font-bold text-emerald-900 uppercase tracking-widest mb-2">নাম</label>
+                      <input name="name" required defaultValue={editingItem.name} className="w-full px-6 py-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-emerald-900 uppercase tracking-widest mb-2">ফোন</label>
+                      <input name="phone" required defaultValue={editingItem.phone} className="w-full px-6 py-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-xs font-bold text-emerald-900 uppercase tracking-widest mb-2">পেশা</label>
+                      <input name="profession" required defaultValue={editingItem.profession} className="w-full px-6 py-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-emerald-900 uppercase tracking-widest mb-2">বয়স</label>
+                      <input name="age" type="number" required defaultValue={editingItem.age} className="w-full px-6 py-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-6">
+                    <div>
+                      <label className="block text-xs font-bold text-emerald-900 uppercase tracking-widest mb-2">পেমেন্ট মাধ্যম</label>
+                      <select name="paymentMethod" defaultValue={editingItem.paymentMethod} className="w-full px-6 py-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500">
+                        <option value="bkash">বিকাশ</option>
+                        <option value="nagad">নগদ</option>
+                        <option value="cash">ক্যাশ</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-emerald-900 uppercase tracking-widest mb-2">টাকা</label>
+                      <input name="amount" type="number" required defaultValue={editingItem.amount} className="w-full px-6 py-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-emerald-900 uppercase tracking-widest mb-2">TrxID</label>
+                      <input name="transactionId" defaultValue={editingItem.transactionId} className="w-full px-6 py-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500" />
+                    </div>
+                  </div>
+                  <button type="submit" disabled={loading} className="w-full py-4 bg-emerald-900 text-white font-bold rounded-2xl hover:bg-emerald-800 transition-all">
+                    {loading ? "অপেক্ষা করুন..." : "আপডেট করুন"}
+                  </button>
+                </form>
+              </motion.div>
+            )}
+
+            <div className="bg-white rounded-[2.5rem] shadow-sm border border-emerald-100 overflow-hidden">
+              <table className="w-full text-left">
+                <thead className="bg-emerald-50 border-b border-emerald-100">
+                  <tr>
+                    <th className="px-6 py-4 text-xs font-bold text-emerald-900 uppercase tracking-widest">নাম ও ফোন</th>
+                    <th className="px-6 py-4 text-xs font-bold text-emerald-900 uppercase tracking-widest">পেশা ও বয়স</th>
+                    <th className="px-6 py-4 text-xs font-bold text-emerald-900 uppercase tracking-widest">পেমেন্ট তথ্য</th>
+                    <th className="px-6 py-4 text-xs font-bold text-emerald-900 uppercase tracking-widest">স্ট্যাটাস</th>
+                    <th className="px-6 py-4 text-xs font-bold text-emerald-900 uppercase tracking-widest text-right">অ্যাকশন</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-emerald-50">
+                  {iftarRegistrations.map(reg => (
+                    <tr key={reg.id} className="hover:bg-emerald-50/30 transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="font-bold text-emerald-900">{reg.name}</div>
+                        <div className="text-xs text-emerald-500">{reg.phone}</div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-sm text-emerald-700">{reg.profession}</div>
+                        <div className="text-xs text-emerald-500">বয়স: {reg.age}</div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-sm font-bold text-emerald-900">৳{reg.amount} ({reg.paymentMethod})</div>
+                        <div className="text-xs text-emerald-500">ID: {reg.transactionId || "N/A"}</div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${
+                          reg.status === "accepted" ? "bg-emerald-100 text-emerald-700" : 
+                          reg.status === "rejected" ? "bg-red-100 text-red-700" : 
+                          "bg-amber-100 text-amber-700"
+                        }`}>
+                          {reg.status === "accepted" ? "গৃহীত" : reg.status === "rejected" ? "বাতিল" : "পেন্ডিং"}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex justify-end gap-2">
+                          {reg.status === "pending" && (
+                            <>
+                              <button 
+                                onClick={() => handleUpdateIftarStatus(reg.id, "accepted")}
+                                className="p-2 bg-emerald-50 text-emerald-700 rounded-xl hover:bg-emerald-600 hover:text-white transition-all"
+                                title="Accept"
+                              >
+                                <CheckCircle2 className="w-4 h-4" />
+                              </button>
+                              <button 
+                                onClick={() => handleUpdateIftarStatus(reg.id, "rejected")}
+                                className="p-2 bg-red-50 text-red-600 rounded-xl hover:bg-red-600 hover:text-white transition-all"
+                                title="Reject"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </>
+                          )}
+                          <button 
+                            onClick={() => {
+                              setEditingItem(reg);
+                              setIsEditing(true);
+                            }}
+                            className="p-2 bg-emerald-50 text-emerald-700 rounded-xl hover:bg-emerald-900 hover:text-white transition-all"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button 
+                            onClick={() => handleDeleteIftarRegistration(reg.id)}
+                            className="p-2 bg-red-50 text-red-600 rounded-xl hover:bg-red-600 hover:text-white transition-all"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+        {activeTab === "adhoc_committee" && (
+          <div className="space-y-8">
+            <div className="flex justify-between items-center">
+              <h2 className="text-3xl font-bold text-emerald-900">আহ্বায়ক কমিটি ম্যানেজমেন্ট</h2>
+              <button 
+                onClick={() => setIsAdding(true)}
+                className="bg-emerald-900 text-white px-6 py-3 rounded-2xl font-bold flex items-center hover:bg-emerald-800 transition-all"
+              >
+                <Plus className="w-5 h-5 mr-2" />
+                নতুন সদস্য
+              </button>
+            </div>
+
+            {(isAdding || isEditing) && (
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="bg-white p-8 rounded-[2.5rem] shadow-lg border border-emerald-100"
+              >
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-xl font-bold text-emerald-900">
+                    {isEditing ? "সদস্য তথ্য এডিট করুন" : "নতুন সদস্য যোগ করুন"}
+                  </h3>
+                  <button onClick={() => { setIsAdding(false); setIsEditing(false); setEditingItem(null); }}>
+                    <X className="w-6 h-6 text-emerald-400" />
+                  </button>
+                </div>
+                <form onSubmit={isEditing ? handleUpdateAdhocCommittee : handleAddAdhocCommittee} className="space-y-6">
+                  <div className="grid grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-xs font-bold text-emerald-900 uppercase tracking-widest mb-2">নাম</label>
+                      <input 
+                        name="name" 
+                        required 
+                        defaultValue={editingItem?.name || ""}
+                        className="w-full px-6 py-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500" 
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-emerald-900 uppercase tracking-widest mb-2">পদবী</label>
+                      <input 
+                        name="designation" 
+                        required 
+                        defaultValue={editingItem?.designation || ""}
+                        className="w-full px-6 py-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500" 
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-xs font-bold text-emerald-900 uppercase tracking-widest mb-2">ফোন নম্বর</label>
+                      <input 
+                        name="phone" 
+                        defaultValue={editingItem?.phone || ""}
+                        className="w-full px-6 py-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500" 
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-emerald-900 uppercase tracking-widest mb-2">ক্রমিক নম্বর (Order)</label>
+                      <input 
+                        name="orderIndex" 
+                        type="number" 
+                        required 
+                        defaultValue={editingItem?.orderIndex || adhocCommittee.length + 1}
+                        className="w-full px-6 py-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500" 
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-4">
+                    <label className="block text-xs font-bold text-emerald-900 uppercase tracking-widest mb-2">ছবি</label>
+                    <div className="flex items-center gap-4">
+                      <input 
+                        type="file" 
+                        name="imageFile" 
+                        accept="image/*"
+                        className="flex-grow px-6 py-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-emerald-900 file:text-white hover:file:bg-emerald-800" 
+                      />
+                      <span className="text-xs text-emerald-400">অথবা</span>
+                      <input 
+                        name="imageUrl" 
+                        defaultValue={editingItem?.imageUrl || ""}
+                        className="flex-grow px-6 py-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500" 
+                        placeholder="ছবির লিঙ্ক (URL)" 
+                      />
+                    </div>
+                  </div>
+                  <button type="submit" disabled={loading} className="w-full py-4 bg-emerald-900 text-white font-bold rounded-2xl hover:bg-emerald-800 transition-all">
+                    {loading ? "অপেক্ষা করুন..." : (isEditing ? "আপডেট করুন" : "সদস্য যোগ করুন")}
+                  </button>
+                </form>
+              </motion.div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {adhocCommittee.map(item => (
+                <div key={item.id} className="bg-white p-6 rounded-3xl shadow-sm border border-emerald-100 flex items-center gap-6">
+                  <img src={item.imageUrl || "https://picsum.photos/seed/placeholder/100/100"} className="w-16 h-16 rounded-full object-cover" />
+                  <div className="flex-grow">
+                    <h4 className="font-bold text-emerald-900">{item.name}</h4>
+                    <p className="text-sm text-emerald-600">{item.designation}</p>
+                    {item.phone && <p className="text-xs text-emerald-400 mt-1">{item.phone}</p>}
+                  </div>
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => {
+                        setEditingItem(item);
+                        setIsEditing(true);
+                        setIsAdding(false);
+                      }}
+                      className="p-2 bg-emerald-50 text-emerald-700 rounded-xl hover:bg-emerald-900 hover:text-white transition-all"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </button>
+                    <button onClick={() => handleDeleteAdhocCommittee(item.id)} className="p-2 bg-red-50 text-red-600 rounded-xl hover:bg-red-600 hover:text-white transition-all"><Trash2 className="w-4 h-4" /></button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         {activeTab === "members" && (
           <div className="space-y-8">
             <h2 className="text-3xl font-bold text-emerald-900">মেম্বার লিস্ট</h2>

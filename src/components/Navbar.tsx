@@ -8,6 +8,8 @@ import { doc, getDoc } from "firebase/firestore";
 const navLinks = [
   { name: "হোম", path: "/" },
   { name: "কার্যনির্বাহী কমিটি", path: "/committee" },
+  { name: "আহ্বায়ক কমিটি", path: "/adhoc-committee" },
+  { name: "ইফতার রেজিস্ট্রেশন", path: "/iftar-registration" },
   { name: "নিউজ ও ইভেন্ট", path: "/news" },
   { name: "দান/তহবিল", path: "/donation" },
   { name: "যোগাযোগ", path: "/contact" },
