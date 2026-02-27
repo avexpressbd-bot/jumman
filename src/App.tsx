@@ -15,26 +15,6 @@ import AdhocCommittee from "./pages/AdhocCommittee";
 import IftarRegistration from "./pages/IftarRegistration";
 
 export default function App() {
-  useEffect(() => {
-    const addIftarNotice = async () => {
-      try {
-        const newsSnap = await getDocs(collection(db, "news"));
-        const exists = newsSnap.docs.some(doc => doc.data().title === "ইফতার ও দোয়া মাহফিল ২০২৪");
-        if (!exists) {
-          await addDoc(collection(db, "news"), {
-            title: "ইফতার ও দোয়া মাহফিল ২০২৪",
-            content: "আগামী ১৫ই রমজান আমাদের সংগঠনের উদ্যোগে ইফতার ও দোয়া মাহফিল অনুষ্ঠিত হবে। সকল সদস্য ও শুভানুধ্যায়ীদের উপস্থিত থাকার জন্য বিনীত অনুরোধ করা হলো। স্থান: বিষ্ণুপুর ইউনিয়ন সোসাইটি কার্যালয়। সময়: বিকাল ৫:০০ ঘটিকা।",
-            imageUrl: "https://picsum.photos/seed/iftar/800/400",
-            date: new Date().toISOString()
-          });
-        }
-      } catch (err) {
-        console.error("Error adding iftar notice:", err);
-      }
-    };
-    addIftarNotice();
-  }, []);
-
   return (
     <HashRouter>
       <Routes>

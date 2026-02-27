@@ -8,6 +8,7 @@ import { doc, getDoc, collection, getDocs, query, orderBy, limit } from "firebas
 export default function Home() {
   const [settings, setSettings] = useState<any>(null);
   const [recentNews, setRecentNews] = useState<any[]>([]);
+  const [iftarHighlight, setIftarHighlight] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -16,8 +17,13 @@ export default function Home() {
         const settingsSnap = await getDoc(doc(db, "settings", "site"));
         if (settingsSnap.exists()) setSettings(settingsSnap.data());
 
-        const newsSnap = await getDocs(query(collection(db, "news"), orderBy("date", "desc"), limit(4)));
-        setRecentNews(newsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        const newsSnap = await getDocs(query(collection(db, "news"), orderBy("date", "desc"), limit(10)));
+        const allNews = newsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setRecentNews(allNews.slice(0, 4));
+        
+        // Find iftar news in the last 10 items for highlighting
+        const foundIftar = allNews.find(n => n.title.includes("ইফতার"));
+        setIftarHighlight(foundIftar);
       } catch (err) {
         console.error(err);
       } finally {
@@ -37,7 +43,6 @@ export default function Home() {
 
   const mainNews = recentNews[0];
   const otherNews = recentNews.slice(1);
-  const iftarNews = recentNews.find(n => n.title.includes("ইফতার"));
 
   return (
     <div className="space-y-20 pb-20">
@@ -87,7 +92,7 @@ export default function Home() {
       </section>
 
       {/* Iftar Highlight Section */}
-      {iftarNews && (
+      {iftarHighlight && (
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-10 relative z-20">
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
@@ -97,8 +102,8 @@ export default function Home() {
             <div className="bg-white rounded-[2.3rem] p-8 md:p-10 flex flex-col md:flex-row items-center gap-8">
               <div className="w-full md:w-1/3 aspect-video md:aspect-square rounded-3xl overflow-hidden shadow-lg">
                 <img 
-                  src={iftarNews.imageUrl} 
-                  alt={iftarNews.title} 
+                  src={iftarHighlight.imageUrl} 
+                  alt={iftarHighlight.title} 
                   className="w-full h-full object-cover"
                   referrerPolicy="no-referrer"
                 />
@@ -107,9 +112,9 @@ export default function Home() {
                 <div className="inline-flex items-center px-4 py-1.5 bg-amber-100 text-amber-700 rounded-full text-xs font-bold uppercase tracking-widest mb-4">
                   বিশেষ ঘোষণা
                 </div>
-                <h2 className="text-3xl font-bold text-emerald-900 mb-4">{iftarNews.title}</h2>
+                <h2 className="text-3xl font-bold text-emerald-900 mb-4">{iftarHighlight.title}</h2>
                 <p className="text-emerald-800/70 mb-8 line-clamp-3 md:line-clamp-none">
-                  {iftarNews.content}
+                  {iftarHighlight.content}
                 </p>
                 <div className="flex flex-wrap gap-4 justify-center md:justify-start">
                   <Link 
