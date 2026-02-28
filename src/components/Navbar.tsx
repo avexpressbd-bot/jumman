@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X, User } from "lucide-react";
+import { Menu, X, User, Download } from "lucide-react";
 import { cn } from "@/src/lib/utils";
 import { db } from "@/src/lib/firebase";
 import { doc, getDoc } from "firebase/firestore";
@@ -18,7 +18,32 @@ const navLinks = [
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [settings, setSettings] = useState<any>(null);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [showInstallBtn, setShowInstallBtn] = useState(false);
   const location = useLocation();
+
+  useEffect(() => {
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setShowInstallBtn(true);
+    });
+
+    window.addEventListener('appinstalled', () => {
+      setShowInstallBtn(false);
+      setDeferredPrompt(null);
+    });
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setShowInstallBtn(false);
+    }
+    setDeferredPrompt(null);
+  };
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -82,6 +107,15 @@ export default function Navbar() {
                 <User className="w-4 h-4 mr-2" />
                 সদস্য এলাকা
               </Link>
+              {showInstallBtn && (
+                <button
+                  onClick={handleInstallClick}
+                  className="ml-2 inline-flex items-center px-4 py-2 bg-amber-400 text-emerald-900 text-sm font-bold rounded-full hover:bg-amber-300 transition-all animate-pulse"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  অ্যাপ ইন্সটল
+                </button>
+              )}
             </div>
           </div>
 
@@ -123,6 +157,18 @@ export default function Navbar() {
             >
               সদস্য এলাকা
             </Link>
+            {showInstallBtn && (
+              <button
+                onClick={() => {
+                  handleInstallClick();
+                  setIsOpen(false);
+                }}
+                className="w-full mt-4 flex items-center justify-center px-4 py-3 bg-amber-400 text-emerald-900 font-bold rounded-xl"
+              >
+                <Download className="w-5 h-5 mr-2" />
+                অ্যাপ ইন্সটল করুন
+              </button>
+            )}
           </div>
         </div>
       )}
