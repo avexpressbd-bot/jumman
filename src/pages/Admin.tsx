@@ -152,7 +152,12 @@ export default function Admin() {
           heroSubtitle: "ঢাকায়স্থ বিষ্ণুপুর ইউনিয়ন সোসাইটি একটি অরাজনৈতিক ও সামাজিক সংগঠন। আমরা আমাদের ইউনিয়নের মানুষের কল্যাণে এবং ভ্রাতৃত্বের বন্ধন সুদৃঢ় করতে কাজ করে যাচ্ছি।",
           heroImage: "https://picsum.photos/seed/society-hero/1920/1080?blur=2",
           missionTitle: "আমাদের লক্ষ্য ও উদ্দেশ্য",
-          missionDesc: "বিষ্ণুপুর ইউনিয়নের মানুষের আর্থ-সামাজিক উন্নয়ন এবং শিক্ষার প্রসারে কাজ করা আমাদের প্রধান লক্ষ্য।",
+          mission1Title: "সুনির্দিষ্ট লক্ষ্য",
+          mission1Desc: "বিষ্ণুপুর ইউনিয়নের মানুষের আর্থ-সামাজিক উন্নয়ন এবং শিক্ষার প্রসারে কাজ করা আমাদের প্রধান লক্ষ্য।",
+          mission2Title: "ভ্রাতৃত্বের বন্ধন",
+          mission2Desc: "ঢাকায় বসবাসরত বিষ্ণুপুর ইউনিয়নের সকল মানুষের মধ্যে ভ্রাতৃত্ব ও সৌহার্দ্যপূর্ণ সম্পর্ক বজায় রাখা।",
+          mission3Title: "সামাজিক সেবা",
+          mission3Desc: "বিপদগ্রস্ত মানুষের পাশে দাঁড়ানো, চিকিৎসা সহায়তা এবং দুস্থদের কল্যাণে বিভিন্ন কর্মসূচি গ্রহণ করা।",
           address: "বাড়ি নং-১২, রোড নং-৫, ধানমন্ডি, ঢাকা-১২০৫",
           phone: "+৮৮০ ১৭০০-০০০০০০",
           email: "info@bishnupursociety.org",
@@ -1467,20 +1472,62 @@ export default function Admin() {
                   </div>
 
                   <div className="space-y-6">
-                    <h3 className="text-lg font-bold text-emerald-900 border-b pb-2">লক্ষ্য ও উদ্দেশ্য</h3>
+                    <h3 className="text-lg font-bold text-emerald-900 border-b pb-2">লক্ষ্য ও উদ্দেশ্য (সেকশন ১)</h3>
                     <div>
                       <label className="block text-xs font-bold text-emerald-900 uppercase tracking-widest mb-2">টাইটেল</label>
                       <input 
-                        value={siteSettings.missionTitle} 
-                        onChange={e => setSiteSettings({...siteSettings, missionTitle: e.target.value})}
+                        value={siteSettings.mission1Title || ""} 
+                        onChange={e => setSiteSettings({...siteSettings, mission1Title: e.target.value})}
                         className="w-full px-6 py-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500" 
                       />
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-emerald-900 uppercase tracking-widest mb-2">বর্ণনা</label>
                       <textarea 
-                        value={siteSettings.missionDesc} 
-                        onChange={e => setSiteSettings({...siteSettings, missionDesc: e.target.value})}
+                        value={siteSettings.mission1Desc || ""} 
+                        onChange={e => setSiteSettings({...siteSettings, mission1Desc: e.target.value})}
+                        rows={3}
+                        className="w-full px-6 py-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500" 
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-6">
+                    <h3 className="text-lg font-bold text-emerald-900 border-b pb-2">লক্ষ্য ও উদ্দেশ্য (সেকশন ২)</h3>
+                    <div>
+                      <label className="block text-xs font-bold text-emerald-900 uppercase tracking-widest mb-2">টাইটেল</label>
+                      <input 
+                        value={siteSettings.mission2Title || ""} 
+                        onChange={e => setSiteSettings({...siteSettings, mission2Title: e.target.value})}
+                        className="w-full px-6 py-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500" 
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-emerald-900 uppercase tracking-widest mb-2">বর্ণনা</label>
+                      <textarea 
+                        value={siteSettings.mission2Desc || ""} 
+                        onChange={e => setSiteSettings({...siteSettings, mission2Desc: e.target.value})}
+                        rows={3}
+                        className="w-full px-6 py-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500" 
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-6">
+                    <h3 className="text-lg font-bold text-emerald-900 border-b pb-2">লক্ষ্য ও উদ্দেশ্য (সেকশন ৩)</h3>
+                    <div>
+                      <label className="block text-xs font-bold text-emerald-900 uppercase tracking-widest mb-2">টাইটেল</label>
+                      <input 
+                        value={siteSettings.mission3Title || ""} 
+                        onChange={e => setSiteSettings({...siteSettings, mission3Title: e.target.value})}
+                        className="w-full px-6 py-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500" 
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-emerald-900 uppercase tracking-widest mb-2">বর্ণনা</label>
+                      <textarea 
+                        value={siteSettings.mission3Desc || ""} 
+                        onChange={e => setSiteSettings({...siteSettings, mission3Desc: e.target.value})}
                         rows={3}
                         className="w-full px-6 py-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500" 
                       />
