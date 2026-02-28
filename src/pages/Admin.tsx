@@ -871,11 +871,6 @@ export default function Admin() {
                 <div className="text-sm text-emerald-600 uppercase tracking-widest font-bold mt-1">লাইভ নিউজ</div>
               </div>
               <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-emerald-100">
-                <div className="text-emerald-400 mb-4"><Globe className="w-10 h-10" /></div>
-                <div className="text-3xl font-bold text-emerald-900">{expatriateCommittee.length}</div>
-                <div className="text-sm text-emerald-600 uppercase tracking-widest font-bold mt-1">প্রবাসী সদস্য</div>
-              </div>
-              <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-emerald-100">
                 <div className="text-emerald-400 mb-4"><Settings className="w-10 h-10" /></div>
                 <div className="text-3xl font-bold text-emerald-900">সক্রিয়</div>
                 <div className="text-sm text-emerald-600 uppercase tracking-widest font-bold mt-1">সাইট স্ট্যাটাস</div>
