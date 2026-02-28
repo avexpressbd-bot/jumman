@@ -8,6 +8,7 @@ import { doc, getDoc, collection, getDocs, query, orderBy, limit } from "firebas
 export default function Home() {
   const [settings, setSettings] = useState<any>(null);
   const [recentNews, setRecentNews] = useState<any[]>([]);
+  const [missions, setMissions] = useState<any[]>([]);
   const [iftarHighlight, setIftarHighlight] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -24,6 +25,10 @@ export default function Home() {
         // Find iftar news in the last 10 items for highlighting
         const foundIftar = allNews.find((n: any) => n.title.includes("ইফতার"));
         setIftarHighlight(foundIftar);
+
+        // Fetch Missions
+        const missionsSnap = await getDocs(query(collection(db, "missions"), orderBy("orderIndex", "asc")));
+        setMissions(missionsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       } catch (err) {
         console.error(err);
       } finally {
@@ -144,35 +149,52 @@ export default function Home() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {[
-            {
-              icon: <Target className="w-8 h-8 text-amber-500" />,
-              title: settings?.mission1Title || "সুনির্দিষ্ট লক্ষ্য",
-              desc: settings?.mission1Desc || "বিষ্ণুপুর ইউনিয়নের মানুষের আর্থ-সামাজিক উন্নয়ন এবং শিক্ষার প্রসারে কাজ করা আমাদের প্রধান লক্ষ্য।",
-            },
-            {
-              icon: <Users className="w-8 h-8 text-amber-500" />,
-              title: settings?.mission2Title || "ভ্রাতৃত্বের বন্ধন",
-              desc: settings?.mission2Desc || "ঢাকায় বসবাসরত বিষ্ণুপুর ইউনিয়নের সকল মানুষের মধ্যে ভ্রাতৃত্ব ও সৌহার্দ্যপূর্ণ সম্পর্ক বজায় রাখা।",
-            },
-            {
-              icon: <Heart className="w-8 h-8 text-amber-500" />,
-              title: settings?.mission3Title || "সামাজিক সেবা",
-              desc: settings?.mission3Desc || "বিপদগ্রস্ত মানুষের পাশে দাঁড়ানো, চিকিৎসা সহায়তা এবং দুস্থদের কল্যাণে বিভিন্ন কর্মসূচি গ্রহণ করা।",
-            },
-          ].map((item, idx) => (
-            <motion.div
-              key={idx}
-              whileHover={{ y: -10 }}
-              className="bg-white p-8 rounded-2xl shadow-sm border border-emerald-100 text-center"
-            >
-              <div className="bg-emerald-50 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                {item.icon}
-              </div>
-              <h3 className="text-xl font-bold text-emerald-900 mb-4">{item.title}</h3>
-              <p className="text-emerald-800/70 leading-relaxed">{item.desc}</p>
-            </motion.div>
-          ))}
+          {missions.length > 0 ? (
+            missions.map((item, idx) => (
+              <motion.div
+                key={item.id}
+                whileHover={{ y: -10 }}
+                className="bg-white p-8 rounded-2xl shadow-sm border border-emerald-100 text-center"
+              >
+                <div className="bg-emerald-50 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                  <Target className="w-8 h-8 text-amber-500" />
+                </div>
+                <h3 className="text-xl font-bold text-emerald-900 mb-4">{item.title}</h3>
+                <p className="text-emerald-800/70 leading-relaxed">{item.content}</p>
+              </motion.div>
+            ))
+          ) : (
+            // Fallback if no missions in DB
+            [
+              {
+                icon: <Target className="w-8 h-8 text-amber-500" />,
+                title: settings?.mission1Title || "সুনির্দিষ্ট লক্ষ্য",
+                desc: settings?.mission1Desc || "বিষ্ণুপুর ইউনিয়নের মানুষের আর্থ-সামাজিক উন্নয়ন এবং শিক্ষার প্রসারে কাজ করা আমাদের প্রধান লক্ষ্য।",
+              },
+              {
+                icon: <Users className="w-8 h-8 text-amber-500" />,
+                title: settings?.mission2Title || "ভ্রাতৃত্বের বন্ধন",
+                desc: settings?.mission2Desc || "ঢাকায় বসবাসরত বিষ্ণুপুর ইউনিয়নের সকল মানুষের মধ্যে ভ্রাতৃত্ব ও সৌহার্দ্যপূর্ণ সম্পর্ক বজায় রাখা।",
+              },
+              {
+                icon: <Heart className="w-8 h-8 text-amber-500" />,
+                title: settings?.mission3Title || "সামাজিক সেবা",
+                desc: settings?.mission3Desc || "বিপদগ্রস্ত মানুষের পাশে দাঁড়ানো, চিকিৎসা সহায়তা এবং দুস্থদের কল্যাণে বিভিন্ন কর্মসূচি গ্রহণ করা।",
+              },
+            ].map((item, idx) => (
+              <motion.div
+                key={idx}
+                whileHover={{ y: -10 }}
+                className="bg-white p-8 rounded-2xl shadow-sm border border-emerald-100 text-center"
+              >
+                <div className="bg-emerald-50 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                  {item.icon}
+                </div>
+                <h3 className="text-xl font-bold text-emerald-900 mb-4">{item.title}</h3>
+                <p className="text-emerald-800/70 leading-relaxed">{item.desc}</p>
+              </motion.div>
+            ))
+          )}
         </div>
       </section>
 

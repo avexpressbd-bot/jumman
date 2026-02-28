@@ -29,11 +29,12 @@ import {
   CheckCircle2,
   AlertCircle,
   Loader2,
-  CreditCard
+  CreditCard,
+  Target
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-type Tab = "dashboard" | "news" | "committee" | "adhoc_committee" | "iftar" | "members" | "settings";
+type Tab = "dashboard" | "news" | "committee" | "adhoc_committee" | "iftar" | "members" | "missions" | "settings";
 
 export default function Admin() {
   const [user, setUser] = useState<any>(null);
@@ -49,6 +50,7 @@ export default function Admin() {
   const [adhocCommittee, setAdhocCommittee] = useState<any[]>([]);
   const [iftarRegistrations, setIftarRegistrations] = useState<any[]>([]);
   const [members, setMembers] = useState<any[]>([]);
+  const [missions, setMissions] = useState<any[]>([]);
   const [siteSettings, setSiteSettings] = useState<any>(null);
 
   // Form states
@@ -138,6 +140,10 @@ export default function Admin() {
       // Fetch Members
       const membersSnap = await getDocs(collection(db, "members"));
       setMembers(membersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+
+      // Fetch Missions
+      const missionsSnap = await getDocs(query(collection(db, "missions"), orderBy("orderIndex", "asc")));
+      setMissions(missionsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
 
       // Fetch Site Settings
       const settingsSnap = await getDoc(doc(db, "settings", "site"));
@@ -556,6 +562,60 @@ export default function Admin() {
     }
   };
 
+  const handleAddMission = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    const form = e.target as HTMLFormElement;
+    const formData = new FormData(form);
+    try {
+      await addDoc(collection(db, "missions"), {
+        title: formData.get("title"),
+        content: formData.get("content"),
+        orderIndex: missions.length,
+      });
+      setMessage({ type: "success", text: "লক্ষ্য ও উদ্দেশ্য সফলভাবে যোগ করা হয়েছে!" });
+      setIsAdding(false);
+      fetchData();
+    } catch (err) {
+      setMessage({ type: "error", text: "যোগ করতে সমস্যা হয়েছে" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdateMission = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingItem?.id) return;
+    setLoading(true);
+    const form = e.target as HTMLFormElement;
+    const formData = new FormData(form);
+    try {
+      await updateDoc(doc(db, "missions", editingItem.id), {
+        title: formData.get("title"),
+        content: formData.get("content"),
+      });
+      setMessage({ type: "success", text: "লক্ষ্য ও উদ্দেশ্য সফলভাবে আপডেট করা হয়েছে!" });
+      setEditingItem(null);
+      setIsEditing(false);
+      fetchData();
+    } catch (err) {
+      setMessage({ type: "error", text: "আপডেট করতে সমস্যা হয়েছে" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteMission = async (id: string) => {
+    if (!confirm("আপনি কি নিশ্চিতভাবে এটি ডিলিট করতে চান?")) return;
+    try {
+      await deleteDoc(doc(db, "missions", id));
+      setMessage({ type: "success", text: "সফলভাবে ডিলিট করা হয়েছে!" });
+      fetchData();
+    } catch (err) {
+      setMessage({ type: "error", text: "ডিলিট করতে সমস্যা হয়েছে" });
+    }
+  };
+
   const handleAdminLogout = () => {
     localStorage.removeItem("isAdminAuthenticated");
     navigate("/admin-login");
@@ -621,6 +681,13 @@ export default function Admin() {
           >
             <Users className="w-5 h-5 mr-3" />
             মেম্বার লিস্ট
+          </button>
+          <button 
+            onClick={() => setActiveTab("missions")}
+            className={`w-full flex items-center px-4 py-3 rounded-xl transition-all ${activeTab === "missions" ? "bg-emerald-800 text-amber-400" : "hover:bg-emerald-900/50 text-emerald-100"}`}
+          >
+            <Target className="w-5 h-5 mr-3" />
+            লক্ষ্য ও উদ্দেশ্য
           </button>
           <button 
             onClick={() => setActiveTab("settings")}
@@ -1309,6 +1376,86 @@ export default function Admin() {
           </div>
         )}
 
+        {activeTab === "missions" && (
+          <div className="space-y-8">
+            <div className="flex justify-between items-center">
+              <h2 className="text-3xl font-bold text-emerald-900">লক্ষ্য ও উদ্দেশ্য ম্যানেজমেন্ট</h2>
+              <button 
+                onClick={() => setIsAdding(true)}
+                className="bg-emerald-900 text-white px-6 py-3 rounded-2xl font-bold flex items-center hover:bg-emerald-800 transition-all"
+              >
+                <Plus className="w-5 h-5 mr-2" />
+                নতুন লক্ষ্য/উদ্দেশ্য
+              </button>
+            </div>
+
+            {(isAdding || isEditing) && (
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="bg-white p-8 rounded-[2.5rem] shadow-lg border border-emerald-100"
+              >
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-xl font-bold text-emerald-900">
+                    {isEditing ? "লক্ষ্য ও উদ্দেশ্য এডিট করুন" : "নতুন লক্ষ্য ও উদ্দেশ্য যোগ করুন"}
+                  </h3>
+                  <button onClick={() => { setIsAdding(false); setIsEditing(false); setEditingItem(null); }}>
+                    <X className="w-6 h-6 text-emerald-400" />
+                  </button>
+                </div>
+                <form onSubmit={isEditing ? handleUpdateMission : handleAddMission} className="space-y-6">
+                  <div>
+                    <label className="block text-xs font-bold text-emerald-900 uppercase tracking-widest mb-2">টাইটেল</label>
+                    <input 
+                      name="title" 
+                      required 
+                      defaultValue={editingItem?.title || ""}
+                      className="w-full px-6 py-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500" 
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-emerald-900 uppercase tracking-widest mb-2">বর্ণনা</label>
+                    <textarea 
+                      name="content" 
+                      required 
+                      rows={4} 
+                      defaultValue={editingItem?.content || ""}
+                      className="w-full px-6 py-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500" 
+                    />
+                  </div>
+                  <button type="submit" disabled={loading} className="w-full py-4 bg-emerald-900 text-white font-bold rounded-2xl hover:bg-emerald-800 transition-all">
+                    {loading ? "অপেক্ষা করুন..." : (isEditing ? "আপডেট করুন" : "সেভ করুন")}
+                  </button>
+                </form>
+              </motion.div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {missions.map(item => (
+                <div key={item.id} className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-emerald-100 flex flex-col">
+                  <div className="bg-emerald-50 w-12 h-12 rounded-2xl flex items-center justify-center mb-6 text-emerald-600">
+                    <Target className="w-6 h-6" />
+                  </div>
+                  <h4 className="font-bold text-emerald-900 text-xl mb-4">{item.title}</h4>
+                  <p className="text-emerald-800/70 text-sm leading-relaxed mb-8 flex-grow">{item.content}</p>
+                  <div className="flex gap-2 pt-4 border-t border-emerald-50">
+                    <button 
+                      onClick={() => {
+                        setEditingItem(item);
+                        setIsEditing(true);
+                        setIsAdding(false);
+                      }}
+                      className="flex-grow py-3 bg-emerald-50 text-emerald-600 font-bold rounded-xl hover:bg-emerald-600 hover:text-white transition-all flex items-center justify-center"
+                    >
+                      <Edit2 className="w-4 h-4 mr-2" /> এডিট
+                    </button>
+                    <button onClick={() => handleDeleteMission(item.id)} className="p-3 bg-red-50 text-red-600 rounded-xl hover:bg-red-600 hover:text-white transition-all"><Trash2 className="w-4 h-4" /></button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         {activeTab === "settings" && siteSettings && (
           <div className="space-y-8">
             <h2 className="text-3xl font-bold text-emerald-900">সাইট সেটিংস</h2>
