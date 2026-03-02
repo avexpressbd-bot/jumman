@@ -115,18 +115,19 @@ export default function ExpatriateCommittee() {
         const querySnapshot = await getDocs(query(collection(db, "expatriate_committee"), orderBy("orderIndex", "asc")));
         const dbMembers = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as CommitteeMember));
         
-        // Combine DB members with static members, avoiding duplicates if any (by name)
-        const combined = [...dbMembers];
-        STATIC_MEMBERS.forEach(staticMember => {
-          if (!dbMembers.some(m => m.name === staticMember.name)) {
-            combined.push(staticMember);
+        // Start with static members as they are the primary request
+        const combined = [...STATIC_MEMBERS];
+        
+        // Add DB members if they are not already in static list (by name)
+        dbMembers.forEach(dbMember => {
+          if (!STATIC_MEMBERS.some(m => m.name === dbMember.name)) {
+            combined.push(dbMember);
           }
         });
         
         setMembers(combined);
       } catch (err) {
-        console.error(err);
-        // If DB fails, at least show static members
+        console.error("Error fetching expatriate committee:", err);
         setMembers(STATIC_MEMBERS);
       } finally {
         setLoading(false);
@@ -144,18 +145,6 @@ export default function ExpatriateCommittee() {
             বিষ্ণুপুর ইউনিয়নের প্রবাসী ভাই-বোনদের নিয়ে গঠিত কমিটি যারা বিদেশ থেকেও ইউনিয়নের উন্নয়নে অবদান রাখছেন।
           </p>
           <div className="w-24 h-1 bg-amber-400 mx-auto rounded-full mt-6" />
-          
-          {localStorage.getItem("isAdminAuthenticated") === "true" && (
-            <div className="mt-8 flex justify-center">
-              <a 
-                href="#/admin" 
-                className="flex items-center gap-2 px-6 py-3 bg-emerald-900 text-white font-bold rounded-2xl hover:bg-emerald-800 transition-all shadow-lg shadow-emerald-900/20"
-              >
-                <Globe className="w-5 h-5" />
-                কমিটি এডিট করুন
-              </a>
-            </div>
-          )}
         </div>
 
         {loading ? (
