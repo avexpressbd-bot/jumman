@@ -14,97 +14,6 @@ interface CommitteeMember {
   ward?: string;
 }
 
-const STATIC_MEMBERS: CommitteeMember[] = [
-  {
-    id: "exp-1",
-    name: "সাবের হোসেন চৌধুরী (বাবু)",
-    designation: "আহ্বায়ক",
-    country: "আমেরিকা",
-    ward: "৩ নং",
-    phone: "+1(917) 4421069",
-    imageUrl: "https://picsum.photos/seed/exp1/400/400"
-  },
-  {
-    id: "exp-2",
-    name: "সাওার হোসেন",
-    designation: "সিনিয়র যুগ্ন আহ্বায়ক",
-    country: "দুবাই",
-    ward: "৮ নং",
-    imageUrl: "https://picsum.photos/seed/exp2/400/400"
-  },
-  {
-    id: "exp-3",
-    name: "সাইফুল ইসলাম মাল",
-    designation: "যুগ্ন আহ্বায়ক",
-    country: "ইতালি",
-    ward: "১নং",
-    imageUrl: "https://picsum.photos/seed/exp3/400/400"
-  },
-  {
-    id: "exp-4",
-    name: "মো: সুমন পাটোয়ারী",
-    designation: "যুগ্ন আহ্বায়ক",
-    country: "সৌদিআরব",
-    ward: "৪ নং",
-    imageUrl: "https://picsum.photos/seed/exp4/400/400"
-  },
-  {
-    id: "exp-5",
-    name: "রাকিব ভুইয়া",
-    designation: "যুগ্ন আহ্বায়ক",
-    country: "কাতার",
-    ward: "৯নং",
-    imageUrl: "https://picsum.photos/seed/exp5/400/400"
-  },
-  {
-    id: "exp-6",
-    name: "মো: মাসুদ গাজী",
-    designation: "সদস্য সচিব",
-    country: "সৌদিআরব",
-    ward: "৪নং",
-    imageUrl: "https://picsum.photos/seed/exp6/400/400"
-  },
-  {
-    id: "exp-7",
-    name: "রিয়াদ হোসেন আপন",
-    designation: "সিনিয়র সদস্য সচিব",
-    country: "সৌদিআরব",
-    ward: "৩ নং",
-    imageUrl: "https://picsum.photos/seed/exp7/400/400"
-  },
-  {
-    id: "exp-8",
-    name: "জিএম সোহাগ",
-    designation: "সদস্য",
-    ward: "৯ নং",
-    imageUrl: "https://picsum.photos/seed/exp8/400/400"
-  },
-  {
-    id: "exp-9",
-    name: "সাইফুল ইসলাম",
-    designation: "সদস্য",
-    country: "সৌদিআরব",
-    ward: "১ নং",
-    imageUrl: "https://picsum.photos/seed/exp9/400/400"
-  },
-  {
-    id: "exp-10",
-    name: "মো:মামুন বেপারী",
-    designation: "সদস্য",
-    country: "কুয়েত",
-    ward: "১ নং",
-    imageUrl: "https://picsum.photos/seed/exp10/400/400"
-  },
-  {
-    id: "exp-11",
-    name: "নেয়ামত উল্লাহ",
-    designation: "সদস্য",
-    country: "সৌদিআরব",
-    ward: "৬ নং",
-    imageUrl: "https://picsum.photos/seed/exp11/400/400"
-  }
-];
-
 export default function ExpatriateCommittee() {
   const [members, setMembers] = useState<CommitteeMember[]>([]);
   const [loading, setLoading] = useState(true);
@@ -114,21 +23,9 @@ export default function ExpatriateCommittee() {
       try {
         const querySnapshot = await getDocs(query(collection(db, "expatriate_committee"), orderBy("orderIndex", "asc")));
         const dbMembers = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as CommitteeMember));
-        
-        // Start with static members as they are the primary request
-        const combined = [...STATIC_MEMBERS];
-        
-        // Add DB members if they are not already in static list (by name)
-        dbMembers.forEach(dbMember => {
-          if (!STATIC_MEMBERS.some(m => m.name === dbMember.name)) {
-            combined.push(dbMember);
-          }
-        });
-        
-        setMembers(combined);
+        setMembers(dbMembers);
       } catch (err) {
         console.error("Error fetching expatriate committee:", err);
-        setMembers(STATIC_MEMBERS);
       } finally {
         setLoading(false);
       }

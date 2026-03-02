@@ -280,6 +280,8 @@ export default function Admin() {
 
       if (activeTab === "expatriate_committee") {
         data.country = formData.get("country");
+        data.ward = formData.get("ward");
+        data.phone = formData.get("phone");
       }
 
       await addDoc(collection(db, collectionName), data);
@@ -411,6 +413,8 @@ export default function Admin() {
 
       if (activeTab === "expatriate_committee") {
         data.country = formData.get("country");
+        data.ward = formData.get("ward");
+        data.phone = formData.get("phone");
       }
 
       await updateDoc(doc(db, collectionName, editingItem.id), data);
@@ -700,6 +704,38 @@ export default function Admin() {
       fetchData();
     } catch (err) {
       setMessage({ type: "error", text: "ডিলিট করতে সমস্যা হয়েছে" });
+    }
+  };
+
+  const handleImportExpatriateStatic = async () => {
+    if (!confirm("আপনি কি নিশ্চিতভাবে ডিফল্ট প্রবাসী সদস্যদের ডাটাবেজে ইমপোর্ট করতে চান? এটি করলে আপনি তাদের এডমিন প্যানেল থেকে এডিট করতে পারবেন।")) return;
+    setLoading(true);
+    try {
+      const staticMembers = [
+        { name: "সাবের হোসেন চৌধুরী (বাবু)", designation: "আহ্বায়ক", country: "আমেরিকা", ward: "৩ নং", phone: "+1(917) 4421069", imageUrl: "https://picsum.photos/seed/exp1/400/400", orderIndex: 1 },
+        { name: "সাওার হোসেন", designation: "সিনিয়র যুগ্ন আহ্বায়ক", country: "দুবাই", ward: "৮ নং", imageUrl: "https://picsum.photos/seed/exp2/400/400", orderIndex: 2 },
+        { name: "সাইফুল ইসলাম মাল", designation: "যুগ্ন আহ্বায়ক", country: "ইতালি", ward: "১নং", imageUrl: "https://picsum.photos/seed/exp3/400/400", orderIndex: 3 },
+        { name: "মো: সুমন পাটোয়ারী", designation: "যুগ্ন আহ্বায়ক", country: "সৌদিআরব", ward: "৪ নং", imageUrl: "https://picsum.photos/seed/exp4/400/400", orderIndex: 4 },
+        { name: "রাকিব ভুইয়া", designation: "যুগ্ন আহ্বায়ক", country: "কাতার", ward: "৯নং", imageUrl: "https://picsum.photos/seed/exp5/400/400", orderIndex: 5 },
+        { name: "মো: মাসুদ গাজী", designation: "সদস্য সচিব", country: "সৌদিআরব", ward: "৪নং", imageUrl: "https://picsum.photos/seed/exp6/400/400", orderIndex: 6 },
+        { name: "রিয়াদ হোসেন আপন", designation: "সিনিয়র সদস্য সচিব", country: "সৌদিআরব", ward: "৩ নং", imageUrl: "https://picsum.photos/seed/exp7/400/400", orderIndex: 7 },
+        { name: "জিএম সোহাগ", designation: "সদস্য", country: "", ward: "৯ নং", imageUrl: "https://picsum.photos/seed/exp8/400/400", orderIndex: 8 },
+        { name: "সাইফুল ইসলাম", designation: "সদস্য", country: "সৌদিআরব", ward: "১ নং", imageUrl: "https://picsum.photos/seed/exp9/400/400", orderIndex: 9 },
+        { name: "মো:মামুন বেপারী", designation: "সদস্য", country: "কুয়েত", ward: "১ নং", imageUrl: "https://picsum.photos/seed/exp10/400/400", orderIndex: 10 },
+        { name: "নেয়ামত উল্লাহ", designation: "সদস্য", country: "সৌদিআরব", ward: "৬ নং", imageUrl: "https://picsum.photos/seed/exp11/400/400", orderIndex: 11 }
+      ];
+
+      for (const member of staticMembers) {
+        await addDoc(collection(db, "expatriate_committee"), member);
+      }
+
+      setMessage({ type: "success", text: "সফলভাবে প্রবাসী সদস্যদের ইমপোর্ট করা হয়েছে!" });
+      fetchData();
+    } catch (err) {
+      console.error("Import error:", err);
+      setMessage({ type: "error", text: "ইমপোর্ট করতে সমস্যা হয়েছে।" });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -1672,13 +1708,24 @@ export default function Admin() {
           <div className="space-y-8">
             <div className="flex justify-between items-center">
               <h2 className="text-3xl font-bold text-emerald-900">প্রবাসী কমিটি ম্যানেজমেন্ট</h2>
-              <button 
-                onClick={() => setIsAdding(true)}
-                className="bg-emerald-900 text-white px-6 py-3 rounded-2xl font-bold flex items-center hover:bg-emerald-800 transition-all"
-              >
-                <Plus className="w-5 h-5 mr-2" />
-                নতুন সদস্য
-              </button>
+              <div className="flex gap-4">
+                <button 
+                  onClick={() => setIsAdding(true)}
+                  className="bg-emerald-900 text-white px-6 py-3 rounded-2xl font-bold flex items-center hover:bg-emerald-800 transition-all"
+                >
+                  <Plus className="w-5 h-5 mr-2" />
+                  নতুন সদস্য
+                </button>
+                {expatriateCommittee.length === 0 && (
+                  <button 
+                    onClick={handleImportExpatriateStatic}
+                    className="bg-amber-500 text-white px-6 py-3 rounded-2xl font-bold flex items-center hover:bg-amber-600 transition-all"
+                  >
+                    <Save className="w-5 h-5 mr-2" />
+                    ডিফল্ট সদস্য ইমপোর্ট করুন
+                  </button>
+                )}
+              </div>
             </div>
 
             {(isAdding || isEditing) && (
@@ -1727,12 +1774,31 @@ export default function Admin() {
                       />
                     </div>
                     <div>
+                      <label className="block text-xs font-bold text-emerald-900 uppercase tracking-widest mb-2">ওয়ার্ড নম্বর</label>
+                      <input 
+                        name="ward" 
+                        defaultValue={editingItem?.ward || ""}
+                        className="w-full px-6 py-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500" 
+                        placeholder="যেমন: ৩ নং"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-xs font-bold text-emerald-900 uppercase tracking-widest mb-2">ফোন নম্বর</label>
+                      <input 
+                        name="phone" 
+                        defaultValue={editingItem?.phone || ""}
+                        className="w-full px-6 py-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500" 
+                      />
+                    </div>
+                    <div>
                       <label className="block text-xs font-bold text-emerald-900 uppercase tracking-widest mb-2">ক্রমিক নম্বর (Sorting)</label>
                       <input 
                         name="orderIndex" 
                         type="number" 
                         required 
-                        defaultValue={editingItem?.orderIndex || ""}
+                        defaultValue={editingItem?.orderIndex || expatriateCommittee.length + 1}
                         className="w-full px-6 py-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500" 
                         placeholder="1, 2, 3..." 
                       />
@@ -1778,6 +1844,10 @@ export default function Admin() {
                   </div>
                   <h4 className="font-bold text-emerald-900 text-lg">{member.name}</h4>
                   <p className="text-sm text-amber-600 font-bold uppercase tracking-widest">{member.designation}</p>
+                  <div className="mt-2 space-y-1">
+                    {member.ward && <p className="text-xs text-emerald-500">ওয়ার্ড: {member.ward}</p>}
+                    {member.phone && <p className="text-xs text-emerald-400">{member.phone}</p>}
+                  </div>
                   <div className="flex gap-2 mt-6 w-full">
                     <button 
                       onClick={() => {
