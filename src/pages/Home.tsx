@@ -108,15 +108,7 @@ export default function Home() {
               <h2 className="text-3xl md:text-4xl font-bold text-emerald-900 mb-4">{settings?.missionTitle || "আমাদের লক্ষ্য ও উদ্দেশ্য"}</h2>
               <div className="w-24 h-1 bg-amber-400 mx-auto md:mx-0 rounded-full" />
             </div>
-            {localStorage.getItem("isAdminAuthenticated") === "true" && (
-              <Link 
-                to="/admin" 
-                className="flex items-center gap-2 px-6 py-3 bg-emerald-50 text-emerald-700 font-bold rounded-2xl hover:bg-emerald-900 hover:text-white transition-all border border-emerald-100"
-              >
-                <Target className="w-5 h-5" />
-                এডিট করুন
-              </Link>
-            )}
+
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">

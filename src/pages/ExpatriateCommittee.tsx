@@ -39,18 +39,6 @@ export default function ExpatriateCommittee() {
             বিষ্ণুপুর ইউনিয়নের প্রবাসী ভাই-বোনদের নিয়ে গঠিত কমিটি যারা বিদেশ থেকেও ইউনিয়নের উন্নয়নে অবদান রাখছেন।
           </p>
           <div className="w-24 h-1 bg-amber-400 mx-auto rounded-full mt-6" />
-          
-          {localStorage.getItem("isAdminAuthenticated") === "true" && (
-            <div className="mt-8 flex justify-center">
-              <a 
-                href="#/admin" 
-                className="flex items-center gap-2 px-6 py-3 bg-emerald-900 text-white font-bold rounded-2xl hover:bg-emerald-800 transition-all shadow-lg shadow-emerald-900/20"
-              >
-                <Globe className="w-5 h-5" />
-                কমিটি এডিট করুন
-              </a>
-            </div>
-          )}
         </div>
 
         {loading ? (

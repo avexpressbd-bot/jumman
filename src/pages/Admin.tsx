@@ -154,8 +154,12 @@ export default function Admin() {
       setMissions(missionsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
 
       // Fetch Live News
-      const liveNewsSnap = await getDocs(query(collection(db, "live_news"), orderBy("createdAt", "desc")));
-      setLiveNews(liveNewsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      const liveNewsSnap = await getDocs(collection(db, "live_news"));
+      const allLiveNews = liveNewsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
+      const sortedLiveNews = allLiveNews.sort((a: any, b: any) => 
+        new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+      );
+      setLiveNews(sortedLiveNews);
 
       // Fetch Site Settings
       const settingsSnap = await getDoc(doc(db, "settings", "site"));
@@ -246,70 +250,6 @@ export default function Admin() {
     try {
       await deleteDoc(doc(db, "news", id));
       setMessage({ type: "success", text: "নিউজ ডিলিট করা হয়েছে" });
-      fetchData();
-    } catch (err) {
-      setMessage({ type: "error", text: "ডিলিট করতে সমস্যা হয়েছে" });
-    }
-  };
-
-  const handleAddLiveNews = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    const form = e.target as HTMLFormElement;
-    const formData = new FormData(form);
-    
-    try {
-      const data = {
-        content: formData.get("content"),
-        priority: formData.get("priority") || "normal",
-        isActive: true,
-        createdAt: new Date().toISOString()
-      };
-
-      await addDoc(collection(db, "live_news"), data);
-      setMessage({ type: "success", text: "লাইভ নিউজ সফলভাবে যুক্ত করা হয়েছে!" });
-      setIsAdding(false);
-      fetchData();
-    } catch (err) {
-      console.error("Error adding live news:", err);
-      setMessage({ type: "error", text: "যোগ করতে সমস্যা হয়েছে" });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleUpdateLiveNews = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingItem) return;
-    setLoading(true);
-    const form = e.target as HTMLFormElement;
-    const formData = new FormData(form);
-    
-    try {
-      const data = {
-        content: formData.get("content"),
-        priority: formData.get("priority") || "normal",
-        isActive: formData.get("isActive") === "on",
-      };
-
-      await updateDoc(doc(db, "live_news", editingItem.id), data);
-      setMessage({ type: "success", text: "লাইভ নিউজ আপডেট করা হয়েছে!" });
-      setIsEditing(false);
-      setEditingItem(null);
-      fetchData();
-    } catch (err) {
-      console.error("Error updating live news:", err);
-      setMessage({ type: "error", text: "আপডেট করতে সমস্যা হয়েছে" });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDeleteLiveNews = async (id: string) => {
-    if (!confirm("আপনি কি নিশ্চিতভাবে এটি ডিলিট করতে চান?")) return;
-    try {
-      await deleteDoc(doc(db, "live_news", id));
-      setMessage({ type: "success", text: "লাইভ নিউজ ডিলিট করা হয়েছে" });
       fetchData();
     } catch (err) {
       setMessage({ type: "error", text: "ডিলিট করতে সমস্যা হয়েছে" });
@@ -705,6 +645,64 @@ export default function Admin() {
     }
   };
 
+  const handleAddLiveNews = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    const form = e.target as HTMLFormElement;
+    const formData = new FormData(form);
+    try {
+      await addDoc(collection(db, "live_news"), {
+        content: formData.get("content"),
+        priority: formData.get("priority"),
+        isActive: formData.get("isActive") === "on" || (form.elements.namedItem("isActive") as HTMLInputElement).checked,
+        createdAt: new Date().toISOString(),
+      });
+      setMessage({ type: "success", text: "লাইভ নিউজ সফলভাবে যোগ করা হয়েছে!" });
+      setIsAdding(false);
+      fetchData();
+    } catch (err) {
+      console.error("Error adding live news:", err);
+      setMessage({ type: "error", text: "যোগ করতে সমস্যা হয়েছে" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdateLiveNews = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingItem?.id) return;
+    setLoading(true);
+    const form = e.target as HTMLFormElement;
+    const formData = new FormData(form);
+    try {
+      await updateDoc(doc(db, "live_news", editingItem.id), {
+        content: formData.get("content"),
+        priority: formData.get("priority"),
+        isActive: formData.get("isActive") === "on" || (form.elements.namedItem("isActive") as HTMLInputElement).checked,
+      });
+      setMessage({ type: "success", text: "লাইভ নিউজ সফলভাবে আপডেট করা হয়েছে!" });
+      setEditingItem(null);
+      setIsEditing(false);
+      fetchData();
+    } catch (err) {
+      console.error("Error updating live news:", err);
+      setMessage({ type: "error", text: "আপডেট করতে সমস্যা হয়েছে" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteLiveNews = async (id: string) => {
+    if (!confirm("আপনি কি নিশ্চিতভাবে এটি ডিলিট করতে চান?")) return;
+    try {
+      await deleteDoc(doc(db, "live_news", id));
+      setMessage({ type: "success", text: "লাইভ নিউজ ডিলিট করা হয়েছে" });
+      fetchData();
+    } catch (err) {
+      setMessage({ type: "error", text: "ডিলিট করতে সমস্যা হয়েছে" });
+    }
+  };
+
   const handleAdminLogout = () => {
     localStorage.removeItem("isAdminAuthenticated");
     navigate("/admin-login");
@@ -737,18 +735,18 @@ export default function Admin() {
             ড্যাশবোর্ড
           </button>
           <button 
-            onClick={() => setActiveTab("news")}
-            className={`w-full flex items-center px-4 py-3 rounded-xl transition-all ${activeTab === "news" ? "bg-emerald-800 text-amber-400" : "hover:bg-emerald-900/50 text-emerald-100"}`}
-          >
-            <Newspaper className="w-5 h-5 mr-3" />
-            নিউজ ম্যানেজমেন্ট
-          </button>
-          <button 
             onClick={() => setActiveTab("live_news")}
             className={`w-full flex items-center px-4 py-3 rounded-xl transition-all ${activeTab === "live_news" ? "bg-emerald-800 text-amber-400" : "hover:bg-emerald-900/50 text-emerald-100"}`}
           >
             <Radio className="w-5 h-5 mr-3" />
             লাইভ নিউজ
+          </button>
+          <button 
+            onClick={() => setActiveTab("news")}
+            className={`w-full flex items-center px-4 py-3 rounded-xl transition-all ${activeTab === "news" ? "bg-emerald-800 text-amber-400" : "hover:bg-emerald-900/50 text-emerald-100"}`}
+          >
+            <Newspaper className="w-5 h-5 mr-3" />
+            নিউজ ম্যানেজমেন্ট
           </button>
           <button 
             onClick={() => setActiveTab("committee")}
@@ -871,6 +869,11 @@ export default function Admin() {
                 <div className="text-emerald-400 mb-4"><Radio className="w-10 h-10" /></div>
                 <div className="text-3xl font-bold text-emerald-900">{liveNews.length}</div>
                 <div className="text-sm text-emerald-600 uppercase tracking-widest font-bold mt-1">লাইভ নিউজ</div>
+              </div>
+              <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-emerald-100">
+                <div className="text-emerald-400 mb-4"><Globe className="w-10 h-10" /></div>
+                <div className="text-3xl font-bold text-emerald-900">{expatriateCommittee.length}</div>
+                <div className="text-sm text-emerald-600 uppercase tracking-widest font-bold mt-1">প্রবাসী সদস্য</div>
               </div>
               <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-emerald-100">
                 <div className="text-emerald-400 mb-4"><Settings className="w-10 h-10" /></div>
