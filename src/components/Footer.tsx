@@ -27,7 +27,7 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
           {/* Brand */}
           <div className="col-span-1 md:col-span-1">
-            <h3 className="text-xl font-bold text-amber-400 mb-4">
+            <h3 className="text-base font-bold text-amber-400 mb-4">
               {settings?.footerTitle || settings?.siteName || "বিষ্ণুপুর ইউনিয়ন সোসাইটি"}
             </h3>
             <p className="text-sm text-emerald-200/70 leading-relaxed">
