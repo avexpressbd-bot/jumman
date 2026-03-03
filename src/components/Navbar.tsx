@@ -9,6 +9,7 @@ const navLinks = [
   { name: "হোম", path: "/" },
   { name: "কার্যনির্বাহী কমিটি", path: "/committee" },
   { name: "আহ্বায়ক কমিটি", path: "/adhoc-committee" },
+  { name: "উপদেষ্টা কমিটি", path: "/advisory-committee" },
   { name: "প্রবাসী কমিটি", path: "/expatriate-committee" },
   { name: "ইফতার রেজিস্ট্রেশন", path: "/iftar-registration" },
   { name: "নিউজ ও ইভেন্ট", path: "/news" },

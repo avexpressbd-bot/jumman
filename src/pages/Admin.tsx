@@ -36,7 +36,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-type Tab = "dashboard" | "news" | "live_news" | "committee" | "adhoc_committee" | "expatriate_committee" | "iftar" | "members" | "missions" | "settings";
+type Tab = "dashboard" | "news" | "live_news" | "committee" | "adhoc_committee" | "expatriate_committee" | "advisory_committee" | "iftar" | "members" | "missions" | "settings";
 
 export default function Admin() {
   const [user, setUser] = useState<any>(null);
@@ -51,6 +51,7 @@ export default function Admin() {
   const [committee, setCommittee] = useState<any[]>([]);
   const [adhocCommittee, setAdhocCommittee] = useState<any[]>([]);
   const [expatriateCommittee, setExpatriateCommittee] = useState<any[]>([]);
+  const [advisoryCommittee, setAdvisoryCommittee] = useState<any[]>([]);
   const [iftarRegistrations, setIftarRegistrations] = useState<any[]>([]);
   const [members, setMembers] = useState<any[]>([]);
   const [missions, setMissions] = useState<any[]>([]);
@@ -140,6 +141,10 @@ export default function Admin() {
       // Fetch Expatriate Committee
       const expatriateSnap = await getDocs(query(collection(db, "expatriate_committee"), orderBy("orderIndex", "asc")));
       setExpatriateCommittee(expatriateSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+
+      // Fetch Advisory Committee
+      const advisorySnap = await getDocs(query(collection(db, "advisory_committee"), orderBy("orderIndex", "asc")));
+      setAdvisoryCommittee(advisorySnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
 
       // Fetch Iftar Registrations
       const iftarSnap = await getDocs(query(collection(db, "iftar_registrations"), orderBy("createdAt", "desc")));
@@ -265,7 +270,7 @@ export default function Admin() {
 
     try {
       let imageUrl = formData.get("imageUrl") as string;
-      const collectionName = activeTab === "committee" ? "committee" : activeTab === "adhoc_committee" ? "adhoc_committee" : "expatriate_committee";
+      const collectionName = activeTab === "committee" ? "committee" : activeTab === "adhoc_committee" ? "adhoc_committee" : activeTab === "advisory_committee" ? "advisory_committee" : "expatriate_committee";
       
       if (imageFile) {
         imageUrl = await handleFileUpload(imageFile, collectionName);
@@ -278,7 +283,7 @@ export default function Admin() {
         orderIndex: parseInt(formData.get("orderIndex") as string) || 0
       };
 
-      if (activeTab === "expatriate_committee") {
+      if (activeTab === "expatriate_committee" || activeTab === "advisory_committee") {
         data.country = formData.get("country");
         data.ward = formData.get("ward");
         data.phone = formData.get("phone");
@@ -299,7 +304,7 @@ export default function Admin() {
   const handleDeleteCommittee = async (id: string) => {
     if (!confirm("আপনি কি নিশ্চিতভাবে এটি ডিলিট করতে চান?")) return;
     try {
-      const collectionName = activeTab === "committee" ? "committee" : activeTab === "adhoc_committee" ? "adhoc_committee" : "expatriate_committee";
+      const collectionName = activeTab === "committee" ? "committee" : activeTab === "adhoc_committee" ? "adhoc_committee" : activeTab === "advisory_committee" ? "advisory_committee" : "expatriate_committee";
       await deleteDoc(doc(db, collectionName, id));
       setMessage({ type: "success", text: "সদস্য ডিলিট করা হয়েছে" });
       fetchData();
@@ -396,7 +401,7 @@ export default function Admin() {
 
     try {
       let imageUrl = editingItem.imageUrl;
-      const collectionName = activeTab === "committee" ? "committee" : activeTab === "adhoc_committee" ? "adhoc_committee" : "expatriate_committee";
+      const collectionName = activeTab === "committee" ? "committee" : activeTab === "adhoc_committee" ? "adhoc_committee" : activeTab === "advisory_committee" ? "advisory_committee" : "expatriate_committee";
       
       if (imageFile) {
         imageUrl = await handleFileUpload(imageFile, collectionName);
@@ -411,7 +416,7 @@ export default function Admin() {
         orderIndex: parseInt(formData.get("orderIndex") as string) || 0
       };
 
-      if (activeTab === "expatriate_committee") {
+      if (activeTab === "expatriate_committee" || activeTab === "advisory_committee") {
         data.country = formData.get("country");
         data.ward = formData.get("ward");
         data.phone = formData.get("phone");
@@ -804,6 +809,13 @@ export default function Admin() {
           >
             <Globe className="w-5 h-5 mr-3" />
             প্রবাসী কমিটি
+          </button>
+          <button 
+            onClick={() => setActiveTab("advisory_committee")}
+            className={`w-full flex items-center px-4 py-3 rounded-xl transition-all ${activeTab === "advisory_committee" ? "bg-emerald-800 text-amber-400" : "hover:bg-emerald-900/50 text-emerald-100"}`}
+          >
+            <Users className="w-5 h-5 mr-3" />
+            উপদেষ্টা কমিটি
           </button>
           <button 
             onClick={() => setActiveTab("iftar")}
@@ -1848,6 +1860,125 @@ export default function Admin() {
                     {member.ward && <p className="text-xs text-emerald-500">ওয়ার্ড: {member.ward}</p>}
                     {member.phone && <p className="text-xs text-emerald-400">{member.phone}</p>}
                   </div>
+                  <div className="flex gap-2 mt-6 w-full">
+                    <button 
+                      onClick={() => {
+                        setEditingItem(member);
+                        setIsEditing(true);
+                        setIsAdding(false);
+                      }}
+                      className="flex-grow py-3 bg-emerald-50 text-emerald-700 rounded-xl hover:bg-emerald-900 hover:text-white transition-all flex items-center justify-center"
+                    >
+                      <Edit2 className="w-4 h-4 mr-2" /> এডিট
+                    </button>
+                    <button onClick={() => handleDeleteCommittee(member.id)} className="p-3 bg-red-50 text-red-600 rounded-xl hover:bg-red-600 hover:text-white transition-all"><Trash2 className="w-4 h-4" /></button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {activeTab === "advisory_committee" && (
+          <div className="space-y-8">
+            <div className="flex justify-between items-center">
+              <h2 className="text-3xl font-bold text-emerald-900">উপদেষ্টা কমিটি ম্যানেজমেন্ট</h2>
+              <button 
+                onClick={() => setIsAdding(true)}
+                className="bg-emerald-900 text-white px-6 py-3 rounded-2xl font-bold flex items-center hover:bg-emerald-800 transition-all"
+              >
+                <Plus className="w-5 h-5 mr-2" />
+                নতুন উপদেষ্টা
+              </button>
+            </div>
+
+            {(isAdding || isEditing) && (
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="bg-white p-8 rounded-[2.5rem] shadow-lg border border-emerald-100"
+              >
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-xl font-bold text-emerald-900">
+                    {isEditing ? "উপদেষ্টা তথ্য এডিট করুন" : "নতুন উপদেষ্টা যোগ করুন"}
+                  </h3>
+                  <button onClick={() => { setIsAdding(false); setIsEditing(false); setEditingItem(null); }}>
+                    <X className="w-6 h-6 text-emerald-400" />
+                  </button>
+                </div>
+                <form onSubmit={isEditing ? handleUpdateCommittee : handleAddCommittee} className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-xs font-bold text-emerald-900 uppercase tracking-widest mb-2">নাম</label>
+                      <input 
+                        name="name" 
+                        required 
+                        defaultValue={editingItem?.name || ""}
+                        className="w-full px-6 py-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500" 
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-emerald-900 uppercase tracking-widest mb-2">পদবী</label>
+                      <input 
+                        name="designation" 
+                        required 
+                        defaultValue={editingItem?.designation || ""}
+                        className="w-full px-6 py-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500" 
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-xs font-bold text-emerald-900 uppercase tracking-widest mb-2">ফোন নম্বর</label>
+                      <input 
+                        name="phone" 
+                        defaultValue={editingItem?.phone || ""}
+                        className="w-full px-6 py-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500" 
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-emerald-900 uppercase tracking-widest mb-2">ক্রমিক নম্বর (Sorting)</label>
+                      <input 
+                        name="orderIndex" 
+                        type="number" 
+                        required 
+                        defaultValue={editingItem?.orderIndex || advisoryCommittee.length + 1}
+                        className="w-full px-6 py-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500" 
+                        placeholder="1, 2, 3..." 
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-emerald-900 uppercase tracking-widest mb-2">ছবি আপলোড করুন</label>
+                    <div className="flex items-center gap-4">
+                      <input 
+                        type="file" 
+                        name="imageFile" 
+                        accept="image/*"
+                        className="flex-grow px-6 py-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-emerald-900 file:text-white hover:file:bg-emerald-800" 
+                      />
+                      <span className="text-xs text-emerald-400">অথবা</span>
+                      <input 
+                        name="imageUrl" 
+                        defaultValue={editingItem?.imageUrl || ""}
+                        className="flex-grow px-6 py-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500" 
+                        placeholder="ছবির লিঙ্ক (URL)" 
+                      />
+                    </div>
+                  </div>
+                  <button type="submit" disabled={loading} className="w-full py-4 bg-emerald-900 text-white font-bold rounded-2xl hover:bg-emerald-800 transition-all">
+                    {loading ? "অপেক্ষা করুন..." : (isEditing ? "আপডেট করুন" : "উপদেষ্টা যোগ করুন")}
+                  </button>
+                </form>
+              </motion.div>
+            )}
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {advisoryCommittee.map(member => (
+                <div key={member.id} className="bg-white p-6 rounded-3xl shadow-sm border border-emerald-100 flex flex-col items-center text-center">
+                  <img src={member.imageUrl || "https://picsum.photos/seed/avatar/400/400"} className="w-32 h-32 rounded-full object-cover mb-4 border-4 border-emerald-50" />
+                  <h4 className="font-bold text-emerald-900 text-lg">{member.name}</h4>
+                  <p className="text-sm text-amber-600 font-bold uppercase tracking-widest">{member.designation}</p>
+                  {member.phone && <p className="text-xs text-emerald-400 mt-1">{member.phone}</p>}
                   <div className="flex gap-2 mt-6 w-full">
                     <button 
                       onClick={() => {
